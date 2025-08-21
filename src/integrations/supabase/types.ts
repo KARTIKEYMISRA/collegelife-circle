@@ -14,7 +14,189 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      campus_events: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string
+          current_participants: number | null
+          description: string
+          event_date: string
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          location: string
+          max_participants: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by: string
+          current_participants?: number | null
+          description: string
+          event_date: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          location: string
+          max_participants?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string
+          current_participants?: number | null
+          description?: string
+          event_date?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          location?: string
+          max_participants?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      education_details: {
+        Row: {
+          achievements: string[] | null
+          certifications: string[] | null
+          created_at: string
+          degree: string
+          gpa: number | null
+          graduation_year: number
+          id: string
+          major: string
+          minor: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          achievements?: string[] | null
+          certifications?: string[] | null
+          created_at?: string
+          degree: string
+          gpa?: number | null
+          graduation_year: number
+          id?: string
+          major: string
+          minor?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          achievements?: string[] | null
+          certifications?: string[] | null
+          created_at?: string
+          degree?: string
+          gpa?: number | null
+          graduation_year?: number
+          id?: string
+          major?: string
+          minor?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          bio: string | null
+          created_at: string
+          department: string
+          email: string
+          full_name: string
+          id: string
+          phone_number: string | null
+          profile_picture_url: string | null
+          student_id: string | null
+          updated_at: string
+          user_id: string
+          year_of_study: number | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          department: string
+          email: string
+          full_name: string
+          id?: string
+          phone_number?: string | null
+          profile_picture_url?: string | null
+          student_id?: string | null
+          updated_at?: string
+          user_id: string
+          year_of_study?: number | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          department?: string
+          email?: string
+          full_name?: string
+          id?: string
+          phone_number?: string | null
+          profile_picture_url?: string | null
+          student_id?: string | null
+          updated_at?: string
+          user_id?: string
+          year_of_study?: number | null
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          created_at: string
+          demo_url: string | null
+          description: string
+          end_date: string | null
+          github_url: string | null
+          id: string
+          image_url: string | null
+          start_date: string | null
+          status: string | null
+          technologies: string[] | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          demo_url?: string | null
+          description: string
+          end_date?: string | null
+          github_url?: string | null
+          id?: string
+          image_url?: string | null
+          start_date?: string | null
+          status?: string | null
+          technologies?: string[] | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          demo_url?: string | null
+          description?: string
+          end_date?: string | null
+          github_url?: string | null
+          id?: string
+          image_url?: string | null
+          start_date?: string | null
+          status?: string | null
+          technologies?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
