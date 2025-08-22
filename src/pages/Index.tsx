@@ -43,7 +43,7 @@ const Index = () => {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading CollegeLife Circle...</p>
+          <p className="text-muted-foreground">Loading Colleaguee...</p>
         </div>
       </div>
     );
@@ -69,6 +69,14 @@ const Index = () => {
       default:
         return (
           <>
+            <div className="bg-gradient-to-r from-primary/10 via-background to-accent/10 border-b border-border py-4">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 className="text-xl font-semibold text-foreground">
+                  Welcome back, {user?.user_metadata?.full_name || "Student"}! 🎓
+                </h2>
+                <p className="text-muted-foreground">Ready to connect and collaborate with your peers?</p>
+              </div>
+            </div>
             <Dashboard user={user} />
             <HomePage />
           </>

@@ -6,13 +6,15 @@ import { Progress } from "@/components/ui/progress";
 import { 
   Calendar, 
   BookOpen, 
-  Target, 
   Flame, 
-  CheckCircle, 
-  Clock,
+  CheckCircle,
   Plus,
-  TrendingUp
+  Users,
+  UserPlus
 } from "lucide-react";
+import { GoalManager } from "@/components/goals/GoalManager";
+import { StudyHourTracker } from "@/components/study/StudyHourTracker";
+import { AchievementManager } from "@/components/achievements/AchievementManager";
 
 interface DashboardProps {
   user: any;
@@ -21,6 +23,7 @@ interface DashboardProps {
 export const Dashboard = ({ user }: DashboardProps) => {
   const [streakCount, setStreakCount] = useState(7);
   const [todayCheckedIn, setTodayCheckedIn] = useState(false);
+  const [connections, setConnections] = useState(42);
 
   const handleDailyCheckIn = () => {
     setTodayCheckedIn(true);
@@ -59,34 +62,65 @@ export const Dashboard = ({ user }: DashboardProps) => {
           <p className="text-muted-foreground">Here's what's happening with your college life</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Daily Check-in Streak */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {/* Daily Check-in Streak - Compact */}
           <Card className="relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-red-500/10" />
-            <CardHeader className="relative">
-              <CardTitle className="flex items-center space-x-2">
-                <Flame className="h-5 w-5 text-orange-500" />
-                <span>Daily Streak</span>
+            <CardHeader className="relative pb-2">
+              <CardTitle className="flex items-center space-x-2 text-lg">
+                <Flame className="h-4 w-4 text-orange-500" />
+                <span>Streak</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="relative">
+            <CardContent className="relative pt-0">
               <div className="text-center">
-                <div className="text-3xl font-bold text-foreground mb-2">{streakCount}</div>
-                <p className="text-sm text-muted-foreground mb-4">days in a row</p>
+                <div className="text-2xl font-bold text-foreground mb-1">{streakCount}</div>
+                <p className="text-xs text-muted-foreground mb-3">days</p>
                 {!todayCheckedIn ? (
                   <Button 
                     onClick={handleDailyCheckIn}
                     className="w-full"
                     size="sm"
                   >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Check in today
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Check in
                   </Button>
                 ) : (
-                  <Badge variant="default" className="bg-green-500 hover:bg-green-600">
-                    ✓ Checked in today!
+                  <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-xs">
+                    ✓ Done!
                   </Badge>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* My Classmates */}
+          <Card className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10" />
+            <CardHeader className="relative pb-2">
+              <CardTitle className="flex items-center justify-between text-lg">
+                <div className="flex items-center space-x-2">
+                  <Users className="h-4 w-4 text-purple-600" />
+                  <span>Classmates</span>
+                </div>
+                <Button variant="ghost" size="sm">
+                  <UserPlus className="h-3 w-3" />
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="relative pt-0">
+              <div className="space-y-2">
+                {["Alex Chen", "Sarah Kim", "Mike Johnson"].map((name, index) => (
+                  <div key={index} className="flex items-center space-x-2">
+                    <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs">
+                      {name.charAt(0)}
+                    </div>
+                    <span className="text-sm text-foreground">{name}</span>
+                  </div>
+                ))}
+                <Button variant="outline" size="sm" className="w-full mt-2">
+                  View all
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -128,23 +162,23 @@ export const Dashboard = ({ user }: DashboardProps) => {
           </Card>
 
           {/* My Projects */}
-          <Card className="relative overflow-hidden">
+          <Card className="relative overflow-hidden col-span-2">
             <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-accent/10" />
-            <CardHeader className="relative">
-              <CardTitle className="flex items-center justify-between">
+            <CardHeader className="relative pb-2">
+              <CardTitle className="flex items-center justify-between text-lg">
                 <div className="flex items-center space-x-2">
-                  <BookOpen className="h-5 w-5 text-green-600" />
+                  <BookOpen className="h-4 w-4 text-green-600" />
                   <span>My Projects</span>
                 </div>
                 <Button variant="ghost" size="sm">
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-3 w-3" />
                 </Button>
               </CardTitle>
             </CardHeader>
-            <CardContent className="relative">
-              <div className="space-y-4">
+            <CardContent className="relative pt-0">
+              <div className="grid grid-cols-2 gap-3">
                 {recentProjects.slice(0, 2).map((project) => (
-                  <div key={project.id}>
+                  <div key={project.id} className="p-3 bg-card/50 rounded">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm font-medium text-foreground line-clamp-1">
                         {project.title}
@@ -156,45 +190,42 @@ export const Dashboard = ({ user }: DashboardProps) => {
                     <Progress value={project.progress} className="h-2" />
                   </div>
                 ))}
-                <Button variant="outline" size="sm" className="w-full">
-                  View all projects
-                </Button>
               </div>
+              <Button variant="outline" size="sm" className="w-full mt-3">
+                View all projects
+              </Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-          <div className="flex items-center space-x-3 p-4 bg-card/50 rounded-lg border">
-            <Target className="h-8 w-8 text-primary" />
-            <div>
-              <p className="text-sm font-medium text-foreground">Goals</p>
-              <p className="text-xs text-muted-foreground">3 active</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3 p-4 bg-card/50 rounded-lg border">
-            <Clock className="h-8 w-8 text-accent" />
-            <div>
-              <p className="text-sm font-medium text-foreground">Study Hours</p>
-              <p className="text-xs text-muted-foreground">24h this week</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3 p-4 bg-card/50 rounded-lg border">
-            <TrendingUp className="h-8 w-8 text-green-600" />
-            <div>
-              <p className="text-sm font-medium text-foreground">GPA</p>
-              <p className="text-xs text-muted-foreground">3.8 / 4.0</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3 p-4 bg-card/50 rounded-lg border">
-            <CheckCircle className="h-8 w-8 text-blue-600" />
-            <div>
-              <p className="text-sm font-medium text-foreground">Completed</p>
-              <p className="text-xs text-muted-foreground">12 tasks</p>
-            </div>
-          </div>
+        {/* Enhanced Stats Section */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
+          <GoalManager />
+          <StudyHourTracker />
+          
+          <Card className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-cyan-500/10" />
+            <CardHeader className="relative">
+              <CardTitle className="flex items-center space-x-2">
+                <Users className="h-5 w-5 text-blue-600" />
+                <span>Connections</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="relative">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-foreground mb-2">{connections}</div>
+                <p className="text-sm text-muted-foreground mb-4">total connections</p>
+                <Button size="sm" variant="outline" className="w-full">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Find more
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <AchievementManager />
         </div>
+
       </div>
     </div>
   );
