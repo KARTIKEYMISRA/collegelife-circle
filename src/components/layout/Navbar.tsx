@@ -18,7 +18,8 @@ import {
   User, 
   LogOut,
   Menu,
-  X
+  X,
+  BookOpen
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -50,7 +51,9 @@ export const Navbar = ({ user, currentPage, onPageChange }: NavbarProps) => {
 
   const navItems = [
     { id: "home", label: "Home", icon: Home },
-    { id: "directory", label: "Directory", icon: Users },
+    { id: "connect", label: "Connect", icon: Users },
+    { id: "discover", label: "Discover", icon: Calendar },
+    { id: "collaborate", label: "Collaborate", icon: BookOpen },
     { id: "events", label: "Events", icon: Calendar },
     { id: "profile", label: "Profile", icon: User },
   ];

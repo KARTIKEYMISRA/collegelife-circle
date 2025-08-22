@@ -5,6 +5,11 @@ import { AuthForm } from "@/components/auth/AuthForm";
 import { Navbar } from "@/components/layout/Navbar";
 import { HomePage } from "@/components/pages/HomePage";
 import { ProfilePage } from "@/components/pages/ProfilePage";
+import { ConnectPage } from "@/components/pages/ConnectPage";
+import { DiscoverPage } from "@/components/pages/DiscoverPage";
+import { CollaboratePage } from "@/components/pages/CollaboratePage";
+import { EventsPage } from "@/components/pages/EventsPage";
+import { Dashboard } from "@/components/dashboard/Dashboard";
 import { Loader2 } from "lucide-react";
 
 const Index = () => {
@@ -52,27 +57,22 @@ const Index = () => {
     switch (currentPage) {
       case "profile":
         return <ProfilePage user={user} />;
-      case "directory":
-        return (
-          <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
-            <div className="max-w-7xl mx-auto text-center">
-              <h1 className="text-3xl font-bold text-foreground mb-4">Student Directory</h1>
-              <p className="text-muted-foreground">Coming soon! Browse and connect with your peers.</p>
-            </div>
-          </div>
-        );
+      case "connect":
+        return <ConnectPage />;
+      case "discover":
+        return <DiscoverPage />;
+      case "collaborate":
+        return <CollaboratePage />;
       case "events":
-        return (
-          <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
-            <div className="max-w-7xl mx-auto text-center">
-              <h1 className="text-3xl font-bold text-foreground mb-4">Campus Events</h1>
-              <p className="text-muted-foreground">Coming soon! Discover and join campus events.</p>
-            </div>
-          </div>
-        );
+        return <EventsPage />;
       case "home":
       default:
-        return <HomePage />;
+        return (
+          <>
+            <Dashboard user={user} />
+            <HomePage />
+          </>
+        );
     }
   };
 
