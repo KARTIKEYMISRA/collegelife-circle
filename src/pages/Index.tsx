@@ -9,7 +9,11 @@ import { ConnectPage } from "@/components/pages/ConnectPage";
 import { DiscoverPage } from "@/components/pages/DiscoverPage";
 import { CollaboratePage } from "@/components/pages/CollaboratePage";
 import { EventsPage } from "@/components/pages/EventsPage";
+import { ResourcesPage } from "@/components/pages/ResourcesPage";
+import { StudyGroupsPage } from "@/components/pages/StudyGroupsPage";
+import { MarketplacePage } from "@/components/pages/MarketplacePage";
 import { Dashboard } from "@/components/dashboard/Dashboard";
+import { Footer } from "@/components/layout/Footer";
 import { Loader2 } from "lucide-react";
 
 const Index = () => {
@@ -65,16 +69,22 @@ const Index = () => {
         return <CollaboratePage />;
       case "events":
         return <EventsPage />;
+      case "resources":
+        return <ResourcesPage />;
+      case "study-groups":
+        return <StudyGroupsPage />;
+      case "marketplace":
+        return <MarketplacePage />;
       case "home":
       default:
         return (
           <>
-            <div className="bg-gradient-to-r from-primary/10 via-background to-accent/10 border-b border-border py-4">
+            <div className="bg-gradient-to-r from-primary/10 via-background to-accent/10 border-b border-border py-6">
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <h2 className="text-xl font-semibold text-foreground">
-                  Welcome back, {user?.user_metadata?.full_name || "Student"}! 🎓
+                <h2 className="text-2xl font-bold text-foreground mb-2">
+                  Hey there, {user?.user_metadata?.full_name || "Student"}! 👋
                 </h2>
-                <p className="text-muted-foreground">Ready to connect and collaborate with your peers?</p>
+                <p className="text-muted-foreground">Ready to make some amazing connections and level up your college experience?</p>
               </div>
             </div>
             <Dashboard user={user} />
@@ -88,6 +98,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Navbar user={user} currentPage={currentPage} onPageChange={setCurrentPage} />
       {renderPage()}
+      <Footer />
     </div>
   );
 };
