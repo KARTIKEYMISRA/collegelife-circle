@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      approval_requests: {
+        Row: {
+          assigned_to: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          priority: string | null
+          request_type: string
+          requested_by: string | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          priority?: string | null
+          request_type: string
+          requested_by?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          priority?: string | null
+          request_type?: string
+          requested_by?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_requests_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campus_events: {
         Row: {
           category: string | null
@@ -62,6 +116,50 @@ export type Database = {
         }
         Relationships: []
       }
+      certificates: {
+        Row: {
+          certificate_url: string | null
+          created_at: string | null
+          expiry_date: string | null
+          id: string
+          issue_date: string | null
+          issuer: string
+          title: string
+          user_id: string | null
+          verification_id: string | null
+        }
+        Insert: {
+          certificate_url?: string | null
+          created_at?: string | null
+          expiry_date?: string | null
+          id?: string
+          issue_date?: string | null
+          issuer: string
+          title: string
+          user_id?: string | null
+          verification_id?: string | null
+        }
+        Update: {
+          certificate_url?: string | null
+          created_at?: string | null
+          expiry_date?: string | null
+          id?: string
+          issue_date?: string | null
+          issuer?: string
+          title?: string
+          user_id?: string | null
+          verification_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       education_details: {
         Row: {
           achievements: string[] | null
@@ -104,16 +202,97 @@ export type Database = {
         }
         Relationships: []
       }
+      institutions: {
+        Row: {
+          address: string | null
+          code: string
+          contact_email: string | null
+          created_at: string | null
+          id: string
+          name: string
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          code: string
+          contact_email?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          code?: string
+          contact_email?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      mentoring_relationships: {
+        Row: {
+          created_at: string | null
+          id: string
+          mentee_id: string | null
+          mentor_id: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          mentee_id?: string | null
+          mentor_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          mentee_id?: string | null
+          mentor_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentoring_relationships_mentee_id_fkey"
+            columns: ["mentee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentoring_relationships_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           bio: string | null
+          connections_count: number | null
           created_at: string
+          daily_streak: number | null
           department: string
           email: string
           full_name: string
           id: string
+          institution_id: string | null
+          institution_roll_number: string | null
+          last_activity_date: string | null
           phone_number: string | null
           profile_picture_url: string | null
+          role: Database["public"]["Enums"]["user_role"] | null
           student_id: string | null
           updated_at: string
           user_id: string
@@ -121,13 +300,19 @@ export type Database = {
         }
         Insert: {
           bio?: string | null
+          connections_count?: number | null
           created_at?: string
+          daily_streak?: number | null
           department: string
           email: string
           full_name: string
           id?: string
+          institution_id?: string | null
+          institution_roll_number?: string | null
+          last_activity_date?: string | null
           phone_number?: string | null
           profile_picture_url?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
           student_id?: string | null
           updated_at?: string
           user_id: string
@@ -135,19 +320,33 @@ export type Database = {
         }
         Update: {
           bio?: string | null
+          connections_count?: number | null
           created_at?: string
+          daily_streak?: number | null
           department?: string
           email?: string
           full_name?: string
           id?: string
+          institution_id?: string | null
+          institution_roll_number?: string | null
+          last_activity_date?: string | null
           phone_number?: string | null
           profile_picture_url?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
           student_id?: string | null
           updated_at?: string
           user_id?: string
           year_of_study?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       projects: {
         Row: {
@@ -197,6 +396,60 @@ export type Database = {
         }
         Relationships: []
       }
+      work_assignments: {
+        Row: {
+          assigned_by: string | null
+          assigned_to: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_by?: string | null
+          assigned_to?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_by?: string | null
+          assigned_to?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_assignments_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -205,7 +458,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      user_role: "student" | "mentor" | "teacher" | "authority"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -332,6 +585,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["student", "mentor", "teacher", "authority"],
+    },
   },
 } as const

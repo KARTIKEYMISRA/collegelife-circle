@@ -7,30 +7,44 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, GraduationCap, Sparkles } from "lucide-react";
+import { Loader2, GraduationCap, Sparkles, User, UserCheck, BrainCircuit, Shield, BookOpen } from "lucide-react";
 
-const colleges = [
-  { name: "MIT", code: "MIT001", fullName: "Massachusetts Institute of Technology" },
-  { name: "Stanford", code: "STF002", fullName: "Stanford University" },
-  { name: "Harvard", code: "HRV003", fullName: "Harvard University" },
-  { name: "Berkeley", code: "UCB004", fullName: "UC Berkeley" },
-  { name: "Caltech", code: "CIT005", fullName: "California Institute of Technology" },
+interface Institution {
+  id: string;
+  code: string;
+  name: string;
+  address: string;
+  contact_email: string;
+  phone: string;
+}
+
+interface AuthFormProps {
+  institution: Institution;
+  onBack: () => void;
+}
+
+const userRoles = [
+  { value: "student", label: "Student", icon: GraduationCap, description: "Access coursework, projects, and peer connections" },
+  { value: "mentor", label: "Mentor", icon: BrainCircuit, description: "Guide students and share expertise" },
+  { value: "teacher", label: "Teacher", icon: BookOpen, description: "Manage courses and student progress" },
+  { value: "authority", label: "Authority (Dean/Director)", icon: Shield, description: "Administrative oversight and approvals" },
 ];
 
-export const AuthForm = () => {
-  const [email, setEmail] = useState("");
+export const AuthForm = ({ institution, onBack }: AuthFormProps) => {
+  const [rollNumber, setRollNumber] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [selectedCollege, setSelectedCollege] = useState("");
+  const [selectedRole, setSelectedRole] = useState<string>("");
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCollege) {
+    if (!selectedRole) {
       toast({
-        title: "College Required",
-        description: "Please select your college to continue.",
+        title: "Role Required",
+        description: "Please select your role to continue.",
         variant: "destructive",
       });
       return;
@@ -39,7 +53,6 @@ export const AuthForm = () => {
     setLoading(true);
 
     try {
-      const college = colleges.find(c => c.code === selectedCollege);
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -47,8 +60,10 @@ export const AuthForm = () => {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
             full_name: fullName,
-            college_code: selectedCollege,
-            college_name: college?.fullName,
+            institution_id: institution.id,
+            institution_code: institution.code,
+            institution_roll_number: rollNumber,
+            role: selectedRole,
           },
         },
       });
@@ -61,7 +76,7 @@ export const AuthForm = () => {
         });
       } else {
         toast({
-          title: "Welcome to Colleaguee! 🎉",
+          title: "Welcome to Colugee! 🎉",
           description: "Check your email to verify your account and start connecting!",
         });
       }
@@ -95,7 +110,7 @@ export const AuthForm = () => {
       } else {
         toast({
           title: "Welcome back! 👋",
-          description: "Ready to connect with your peers?",
+          description: "Ready to connect with your community?",
         });
       }
     } catch (error) {
@@ -121,6 +136,14 @@ export const AuthForm = () => {
       
       <Card className="w-full max-w-md glass-effect hover-lift relative z-10 border-primary/20">
         <CardHeader className="text-center space-y-4">
+          <Button 
+            variant="ghost" 
+            onClick={onBack}
+            className="absolute left-4 top-4 p-2 h-auto"
+          >
+            ← Back
+          </Button>
+          
           <div className="flex justify-center">
             <div className="p-4 bg-gradient-to-br from-primary to-accent rounded-2xl shadow-lg">
               <GraduationCap className="h-8 w-8 text-primary-foreground" />
@@ -128,11 +151,10 @@ export const AuthForm = () => {
           </div>
           <div>
             <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-              Colleaguee
+              {institution.code}
             </CardTitle>
-            <CardDescription className="text-muted-foreground flex items-center justify-center gap-1">
-              <Sparkles className="h-4 w-4" />
-              Where campus connections come alive
+            <CardDescription className="text-muted-foreground text-sm">
+              {institution.name}
             </CardDescription>
           </div>
         </CardHeader>
@@ -150,11 +172,11 @@ export const AuthForm = () => {
             <TabsContent value="signin" className="space-y-4">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+                  <Label htmlFor="email" className="text-sm font-medium">Email / Roll Number</Label>
                   <Input
                     id="email"
-                    type="email"
-                    placeholder="your.email@college.edu"
+                    type="text"
+                    placeholder="your.email@domain.com or roll number"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -193,37 +215,58 @@ export const AuthForm = () => {
                   <Input
                     id="fullName"
                     type="text"
-                    placeholder="Your awesome name"
+                    placeholder="Your full name"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     required
                     className="bg-background/50 border-primary/20 focus:border-primary"
                   />
                 </div>
+                
                 <div className="space-y-2">
-                  <Label htmlFor="college" className="text-sm font-medium">College</Label>
-                  <Select value={selectedCollege} onValueChange={setSelectedCollege} required>
+                  <Label htmlFor="rollNumber" className="text-sm font-medium">Institution ID / Roll Number</Label>
+                  <Input
+                    id="rollNumber"
+                    type="text"
+                    placeholder="e.g., 2021CS001, 21BCS001"
+                    value={rollNumber}
+                    onChange={(e) => setRollNumber(e.target.value)}
+                    required
+                    className="bg-background/50 border-primary/20 focus:border-primary"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="role" className="text-sm font-medium">Role</Label>
+                  <Select value={selectedRole} onValueChange={setSelectedRole} required>
                     <SelectTrigger className="bg-background/50 border-primary/20 focus:border-primary">
-                      <SelectValue placeholder="Select your college" />
+                      <SelectValue placeholder="Select your role" />
                     </SelectTrigger>
                     <SelectContent>
-                      {colleges.map((college) => (
-                        <SelectItem key={college.code} value={college.code}>
-                          <div className="flex flex-col">
-                            <span className="font-medium">{college.name}</span>
-                            <span className="text-xs text-muted-foreground">{college.code} • {college.fullName}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
+                      {userRoles.map((role) => {
+                        const IconComponent = role.icon;
+                        return (
+                          <SelectItem key={role.value} value={role.value}>
+                            <div className="flex items-center space-x-2">
+                              <IconComponent className="h-4 w-4" />
+                              <div className="flex flex-col">
+                                <span className="font-medium">{role.label}</span>
+                                <span className="text-xs text-muted-foreground">{role.description}</span>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
+                
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium">College Email</Label>
+                  <Label htmlFor="email" className="text-sm font-medium">Email</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="your.email@college.edu"
+                    placeholder="your.email@domain.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -250,7 +293,7 @@ export const AuthForm = () => {
                       Creating your profile...
                     </>
                   ) : (
-                    "Join Colleaguee 🚀"
+                    "Join Colugee 🚀"
                   )}
                 </Button>
               </form>
@@ -259,7 +302,7 @@ export const AuthForm = () => {
           
           <div className="mt-6 text-center">
             <p className="text-xs text-muted-foreground">
-              By joining, you agree to connect with amazing peers and build lasting friendships! ✨
+              By joining, you agree to connect with your institutional community! ✨
             </p>
           </div>
         </CardContent>
