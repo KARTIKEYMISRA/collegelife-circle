@@ -288,7 +288,7 @@ export const MarketplacePage = () => {
                     </div>
                   </CardContent>
                 </Card>
-              )))}
+              ))}
             </div>
           </TabsContent>
 
