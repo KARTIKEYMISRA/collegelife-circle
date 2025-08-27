@@ -49,17 +49,21 @@ export const Navbar = ({ user, profile, currentPage, onPageChange }: NavbarProps
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
-      toast({
-        title: "Signed out successfully",
-        description: "See you next time!",
-      });
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      if (error) {
+        console.error('Sign out error:', error);
+        // Force clear local session even if server signout fails
+        window.location.reload();
+      } else {
+        toast({
+          title: "Signed out successfully",
+          description: "See you next time!",
+        });
+      }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to sign out",
-        variant: "destructive",
-      });
+      console.error('Sign out error:', error);
+      // Force clear local session
+      window.location.reload();
     }
   };
 

@@ -70,17 +70,21 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
         .limit(3);
 
       // Fetch classmates from same institution
-      const { data: classmatesData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('institution_id', profile.institution_id)
-        .eq('role', 'student')
-        .neq('user_id', user.id)
-        .limit(5);
+      let classmatesData = [];
+      if (profile.institution_id) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('institution_id', profile.institution_id)
+          .eq('role', 'student')
+          .neq('user_id', user.id)
+          .limit(5);
+        classmatesData = data || [];
+      }
 
       setCertificates(certsData || []);
       setProjects(projectsData || []);
-      setClassmates(classmatesData || []);
+      setClassmates(classmatesData);
       
       // Mock upcoming tasks for now
       setUpcomingTasks([
