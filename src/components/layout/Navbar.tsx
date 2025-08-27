@@ -23,13 +23,27 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+interface Profile {
+  id: string;
+  user_id: string;
+  role: 'student' | 'mentor' | 'teacher' | 'authority';
+  institution_id: string;
+  institution_roll_number: string;
+  full_name: string;
+  email: string;
+  daily_streak: number;
+  connections_count: number;
+  department: string;
+}
+
 interface NavbarProps {
   user: any;
+  profile?: Profile | null;
   currentPage: string;
   onPageChange: (page: string) => void;
 }
 
-export const Navbar = ({ user, currentPage, onPageChange }: NavbarProps) => {
+export const Navbar = ({ user, profile, currentPage, onPageChange }: NavbarProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { toast } = useToast();
 
@@ -50,7 +64,7 @@ export const Navbar = ({ user, currentPage, onPageChange }: NavbarProps) => {
   };
 
   const navItems = [
-    { id: "home", label: "Home", icon: Home },
+    { id: "dashboard", label: "Dashboard", icon: Home },
     { id: "connect", label: "Connect", icon: Users },
     { id: "discover", label: "Discover", icon: Calendar },
     { id: "collaborate", label: "Collaborate", icon: BookOpen },
@@ -103,16 +117,21 @@ export const Navbar = ({ user, currentPage, onPageChange }: NavbarProps) => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      {user?.user_metadata?.full_name || "Student"}
-                    </p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {user?.email}
-                    </p>
-                  </div>
-                </DropdownMenuLabel>
+                 <DropdownMenuLabel className="font-normal">
+                   <div className="flex flex-col space-y-1">
+                     <p className="text-sm font-medium leading-none">
+                       {profile?.full_name || user?.user_metadata?.full_name || "User"}
+                     </p>
+                     <p className="text-xs leading-none text-muted-foreground">
+                       {profile?.email || user?.email}
+                     </p>
+                     {profile?.role && (
+                       <p className="text-xs leading-none text-primary font-medium capitalize">
+                         {profile.role}
+                       </p>
+                     )}
+                   </div>
+                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => onPageChange("profile")}>
                   <User className="mr-2 h-4 w-4" />

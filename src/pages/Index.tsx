@@ -13,7 +13,6 @@ import { EventsPage } from "@/components/pages/EventsPage";
 import { ResourcesPage } from "@/components/pages/ResourcesPage";
 import { StudyGroupsPage } from "@/components/pages/StudyGroupsPage";
 import { MarketplacePage } from "@/components/pages/MarketplacePage";
-import { Dashboard } from "@/components/dashboard/Dashboard";
 import { StudentDashboard } from "@/components/dashboard/StudentDashboard";
 import { MentorDashboard } from "@/components/dashboard/MentorDashboard";
 import { AuthorityDashboard } from "@/components/dashboard/AuthorityDashboard";
@@ -29,11 +28,25 @@ interface Institution {
   phone: string;
 }
 
+interface Profile {
+  id: string;
+  user_id: string;
+  role: 'student' | 'mentor' | 'teacher' | 'authority';
+  institution_id: string;
+  institution_roll_number: string;
+  full_name: string;
+  email: string;
+  daily_streak: number;
+  connections_count: number;
+  department: string;
+}
+
 const Index = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState("home");
+  const [currentPage, setCurrentPage] = useState("dashboard");
   const [selectedInstitution, setSelectedInstitution] = useState<Institution | null>(null);
   const [showAuth, setShowAuth] = useState(false);
 
@@ -43,7 +56,16 @@ const Index = () => {
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        setLoading(false);
+        
+        if (session?.user) {
+          // Fetch user profile when logged in
+          setTimeout(() => {
+            fetchUserProfile(session.user.id);
+          }, 0);
+        } else {
+          setProfile(null);
+          setLoading(false);
+        }
       }
     );
 
@@ -51,11 +73,36 @@ const Index = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false);
+      
+      if (session?.user) {
+        fetchUserProfile(session.user.id);
+      } else {
+        setLoading(false);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+      } else {
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -93,6 +140,18 @@ const Index = () => {
     );
   }
 
+  // Show loading if user exists but profile not loaded yet
+  if (user && !profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading your profile...</p>
+        </div>
+      </div>
+    );
+  }
+
   const renderPage = () => {
     switch (currentPage) {
       case "profile":
@@ -111,28 +170,33 @@ const Index = () => {
         return <StudyGroupsPage />;
       case "marketplace":
         return <MarketplacePage />;
+      case "dashboard":
+        return renderDashboard();
       case "home":
       default:
-        return (
-          <>
-            <div className="bg-gradient-to-r from-primary/10 via-background to-accent/10 border-b border-border py-6">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <h2 className="text-2xl font-bold text-foreground mb-2">
-                  Hey there, {user?.user_metadata?.full_name || "Student"}! 👋
-                </h2>
-                <p className="text-muted-foreground">Ready to make some amazing connections and level up your college experience?</p>
-              </div>
-            </div>
-            <Dashboard user={user} />
-            <HomePage />
-          </>
-        );
+        return <HomePage />;
+    }
+  };
+
+  const renderDashboard = () => {
+    if (!profile) return null;
+
+    switch (profile.role) {
+      case 'student':
+        return <StudentDashboard user={user} profile={profile} />;
+      case 'mentor':
+        return <MentorDashboard user={user} profile={profile} />;
+      case 'teacher':
+      case 'authority':
+        return <AuthorityDashboard user={user} profile={profile} />;
+      default:
+        return <StudentDashboard user={user} profile={profile} />;
     }
   };
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar user={user} currentPage={currentPage} onPageChange={setCurrentPage} />
+      <Navbar user={user} profile={profile} currentPage={currentPage} onPageChange={setCurrentPage} />
       {renderPage()}
       <Footer />
     </div>
