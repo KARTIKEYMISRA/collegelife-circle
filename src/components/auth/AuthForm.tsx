@@ -96,23 +96,43 @@ export const AuthForm = ({ institution, onBack }: AuthFormProps) => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      // First authenticate with Supabase
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) {
+      if (authError) {
         toast({
           title: "Login Failed",
-          description: error.message,
+          description: authError.message,
           variant: "destructive",
         });
-      } else {
-        toast({
-          title: "Welcome back! 👋",
-          description: "Ready to connect with your community?",
-        });
+        return;
       }
+
+      // Check if user belongs to this institution
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('institution_id')
+        .eq('user_id', authData.user.id)
+        .single();
+
+      if (profileError || !profile || profile.institution_id !== institution.id) {
+        // Sign out the user if they don't belong to this institution
+        await supabase.auth.signOut();
+        toast({
+          title: "Access Denied",
+          description: "You are not registered with this institution. Please use the correct institution code.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Welcome back! 👋",
+        description: "Ready to connect with your community?",
+      });
     } catch (error) {
       toast({
         title: "Error",
