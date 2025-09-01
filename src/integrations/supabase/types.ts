@@ -160,6 +160,57 @@ export type Database = {
           },
         ]
       }
+      connection_requests: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          receiver_id: string
+          sender_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          receiver_id: string
+          sender_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          receiver_id?: string
+          sender_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      connections: {
+        Row: {
+          created_at: string
+          id: string
+          user1_id: string
+          user2_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user1_id: string
+          user2_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user1_id?: string
+          user2_id?: string
+        }
+        Relationships: []
+      }
       education_details: {
         Row: {
           achievements: string[] | null
@@ -201,6 +252,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      group_memberships: {
+        Row: {
+          group_id: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_memberships_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       institutions: {
         Row: {
@@ -396,6 +479,66 @@ export type Database = {
         }
         Relationships: []
       }
+      study_groups: {
+        Row: {
+          created_at: string
+          created_by: string
+          current_members: number | null
+          description: string | null
+          difficulty: string
+          id: string
+          image_url: string | null
+          institution_id: string | null
+          is_active: boolean
+          location: string | null
+          max_members: number | null
+          meeting_schedule: string | null
+          name: string
+          subject: string
+          tags: string[] | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          current_members?: number | null
+          description?: string | null
+          difficulty?: string
+          id?: string
+          image_url?: string | null
+          institution_id?: string | null
+          is_active?: boolean
+          location?: string | null
+          max_members?: number | null
+          meeting_schedule?: string | null
+          name: string
+          subject: string
+          tags?: string[] | null
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          current_members?: number | null
+          description?: string | null
+          difficulty?: string
+          id?: string
+          image_url?: string | null
+          institution_id?: string | null
+          is_active?: boolean
+          location?: string | null
+          max_members?: number | null
+          meeting_schedule?: string | null
+          name?: string
+          subject?: string
+          tags?: string[] | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       work_assignments: {
         Row: {
           assigned_by: string | null
@@ -455,7 +598,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      accept_connection_request: {
+        Args: { request_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       user_role: "student" | "mentor" | "teacher" | "authority"
