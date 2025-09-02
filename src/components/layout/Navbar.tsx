@@ -19,7 +19,15 @@ import {
   LogOut,
   Menu,
   X,
-  BookOpen
+  BookOpen,
+  Search,
+  ShoppingBag,
+  BarChart3,
+  UserPlus,
+  Handshake,
+  Trophy,
+  MessageCircle,
+  Rss
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -68,12 +76,16 @@ export const Navbar = ({ user, profile, currentPage, onPageChange }: NavbarProps
   };
 
   const navItems = [
-    { id: "dashboard", label: "Dashboard", icon: Home },
-    { id: "connect", label: "Connect", icon: Users },
-    { id: "discover", label: "Discover", icon: Calendar },
-    { id: "collaborate", label: "Collaborate", icon: BookOpen },
+    { id: "dashboard", label: "Dashboard", icon: BarChart3 },
+    { id: "feed", label: "Feed", icon: Rss },
+    { id: "connect", label: "Connect", icon: UserPlus },
+    { id: "messages", label: "Messages", icon: MessageCircle },
+    { id: "discover", label: "Discover", icon: Search },
+    { id: "collaborate", label: "Collaborate", icon: Handshake },
     { id: "events", label: "Events", icon: Calendar },
-    { id: "profile", label: "Profile", icon: User },
+    { id: "resources", label: "Resources", icon: BookOpen },
+    { id: "study-groups", label: "Groups", icon: Users },
+    { id: "marketplace", label: "Market", icon: ShoppingBag },
   ];
 
   return (

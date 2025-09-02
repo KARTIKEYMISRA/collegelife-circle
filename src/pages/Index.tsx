@@ -6,6 +6,7 @@ import { InstitutionCodePage } from "@/components/pages/InstitutionCodePage";
 import { Navbar } from "@/components/layout/Navbar";
 import { HomePage } from "@/components/pages/HomePage";
 import { ProfilePage } from "@/components/pages/ProfilePage";
+import { EnhancedProfilePage } from "@/components/pages/EnhancedProfilePage";
 import { ConnectPage } from "@/components/pages/ConnectPage";
 import { DiscoverPage } from "@/components/pages/DiscoverPage";
 import { CollaboratePage } from "@/components/pages/CollaboratePage";
@@ -13,6 +14,8 @@ import { EventsPage } from "@/components/pages/EventsPage";
 import { ResourcesPage } from "@/components/pages/ResourcesPage";
 import { StudyGroupsPage } from "@/components/pages/StudyGroupsPage";
 import { MarketplacePage } from "@/components/pages/MarketplacePage";
+import { ChatPage } from "@/components/pages/ChatPage";
+import { FeedPage } from "@/components/pages/FeedPage";
 import { StudentDashboard } from "@/components/dashboard/StudentDashboard";
 import { MentorDashboard } from "@/components/dashboard/MentorDashboard";
 import { AuthorityDashboard } from "@/components/dashboard/AuthorityDashboard";
@@ -157,9 +160,13 @@ const Index = () => {
   const renderPage = () => {
     switch (currentPage) {
       case "profile":
-        return <ProfilePage user={user} />;
+        return <EnhancedProfilePage user={user} />;
       case "connect":
         return <ConnectPage />;
+      case "messages":
+        return <ChatPage />;
+      case "feed":
+        return <FeedPage />;
       case "discover":
         return <DiscoverPage />;
       case "collaborate":
