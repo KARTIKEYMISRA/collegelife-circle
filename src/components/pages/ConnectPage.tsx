@@ -27,6 +27,7 @@ import {
   CheckCircle
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { ProfileViewPage } from "./ProfileViewPage";
 import { toast } from "@/hooks/use-toast";
 
 interface Profile {
@@ -82,6 +83,17 @@ export const ConnectPage = () => {
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
+  const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
+
+  // Show profile view if selected
+  if (selectedProfile) {
+    return (
+      <ProfileViewPage 
+        profileId={selectedProfile} 
+        onBack={() => setSelectedProfile(null)}
+      />
+    );
+  }
   
   // Create group form state
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
@@ -582,7 +594,12 @@ export const ConnectPage = () => {
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
-                          <CardTitle className="text-lg">{profile.full_name}</CardTitle>
+                        <span 
+                          className="cursor-pointer hover:text-primary transition-colors"
+                          onClick={() => setSelectedProfile(profile.user_id)}
+                        >
+                          {profile.full_name}
+                        </span>
                           <div className="flex items-center text-sm text-muted-foreground">
                             <GraduationCap className="h-4 w-4 mr-1" />
                             {profile.year_of_study && `Year ${profile.year_of_study} • `}
@@ -657,8 +674,8 @@ export const ConnectPage = () => {
                             </DialogContent>
                           </Dialog>
                         )}
-                        <Button size="sm" variant="outline">
-                          <MessageCircle className="h-4 w-4" />
+                        <Button size="sm" variant="outline" onClick={() => setSelectedProfile(profile.user_id)}>
+                          View Profile
                         </Button>
                       </div>
                     </CardContent>

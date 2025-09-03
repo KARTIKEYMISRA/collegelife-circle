@@ -101,7 +101,7 @@ export const Navbar = ({ user, profile, currentPage, onPageChange }: NavbarProps
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-4 lg:space-x-8 overflow-x-auto">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -109,10 +109,10 @@ export const Navbar = ({ user, profile, currentPage, onPageChange }: NavbarProps
                   key={item.id}
                   variant={currentPage === item.id ? "default" : "ghost"}
                   onClick={() => onPageChange(item.id)}
-                  className="flex items-center space-x-2"
+                  className="flex items-center space-x-2 whitespace-nowrap"
                 >
                   <Icon className="h-4 w-4" />
-                  <span>{item.label}</span>
+                  <span className="hidden lg:block">{item.label}</span>
                 </Button>
               );
             })}

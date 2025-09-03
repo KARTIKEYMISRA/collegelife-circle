@@ -11,7 +11,7 @@ import { ConnectPage } from "@/components/pages/ConnectPage";
 import { DiscoverPage } from "@/components/pages/DiscoverPage";
 import { CollaboratePage } from "@/components/pages/CollaboratePage";
 import { EventsPage } from "@/components/pages/EventsPage";
-import { ResourcesPage } from "@/components/pages/ResourcesPage";
+import { EnhancedResourcesPage } from "@/components/pages/EnhancedResourcesPage";
 import { StudyGroupsPage } from "@/components/pages/StudyGroupsPage";
 
 import { ChatPage } from "@/components/pages/ChatPage";
@@ -174,7 +174,7 @@ const Index = () => {
       case "events":
         return <EventsPage />;
       case "resources":
-        return <ResourcesPage />;
+        return <EnhancedResourcesPage />;
       case "study-groups":
         return <StudyGroupsPage />;
       case "dashboard":
