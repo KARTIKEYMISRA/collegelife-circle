@@ -13,7 +13,7 @@ import { CollaboratePage } from "@/components/pages/CollaboratePage";
 import { EventsPage } from "@/components/pages/EventsPage";
 import { ResourcesPage } from "@/components/pages/ResourcesPage";
 import { StudyGroupsPage } from "@/components/pages/StudyGroupsPage";
-import { MarketplacePage } from "@/components/pages/MarketplacePage";
+
 import { ChatPage } from "@/components/pages/ChatPage";
 import { FeedPage } from "@/components/pages/FeedPage";
 import { StudentDashboard } from "@/components/dashboard/StudentDashboard";
@@ -177,8 +177,6 @@ const Index = () => {
         return <ResourcesPage />;
       case "study-groups":
         return <StudyGroupsPage />;
-      case "marketplace":
-        return <MarketplacePage />;
       case "dashboard":
         return renderDashboard();
       case "home":

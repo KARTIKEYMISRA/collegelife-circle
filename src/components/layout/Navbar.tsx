@@ -21,7 +21,7 @@ import {
   X,
   BookOpen,
   Search,
-  ShoppingBag,
+  
   BarChart3,
   UserPlus,
   Handshake,
@@ -85,7 +85,6 @@ export const Navbar = ({ user, profile, currentPage, onPageChange }: NavbarProps
     { id: "events", label: "Events", icon: Calendar },
     { id: "resources", label: "Resources", icon: BookOpen },
     { id: "study-groups", label: "Groups", icon: Users },
-    { id: "marketplace", label: "Market", icon: ShoppingBag },
   ];
 
   return (
