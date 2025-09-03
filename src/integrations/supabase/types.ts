@@ -683,6 +683,54 @@ export type Database = {
         }
         Relationships: []
       }
+      resources: {
+        Row: {
+          created_at: string
+          description: string | null
+          downloads_count: number | null
+          file_size: number | null
+          file_url: string
+          id: string
+          rating: number | null
+          resource_type: string
+          subject: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          downloads_count?: number | null
+          file_size?: number | null
+          file_url: string
+          id?: string
+          rating?: number | null
+          resource_type?: string
+          subject: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          downloads_count?: number | null
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          rating?: number | null
+          resource_type?: string
+          subject?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       skills: {
         Row: {
           created_at: string
