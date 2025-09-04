@@ -155,17 +155,23 @@ export const ConnectPage = () => {
   };
 
   const fetchProfiles = async () => {
-    if (!currentProfile?.institution_id) return;
-
+    // Fetch all profiles first, then filter by institution if available
     const { data: profilesData } = await supabase
       .from('profiles')
       .select('*')
-      .eq('institution_id', currentProfile.institution_id)
       .neq('user_id', currentUser.id);
 
     if (profilesData) {
-      const students = profilesData.filter(p => p.role === 'student');
-      const mentorProfiles = profilesData.filter(p => p.role === 'mentor' || p.role === 'teacher');
+      // If current user has institution_id, prioritize same institution users
+      let filteredProfiles = profilesData;
+      if (currentProfile?.institution_id) {
+        const sameInstitution = profilesData.filter(p => p.institution_id === currentProfile.institution_id);
+        const otherInstitutions = profilesData.filter(p => p.institution_id !== currentProfile.institution_id);
+        filteredProfiles = [...sameInstitution, ...otherInstitutions];
+      }
+
+      const students = filteredProfiles.filter(p => p.role === 'student');
+      const mentorProfiles = filteredProfiles.filter(p => p.role === 'mentor' || p.role === 'teacher');
       
       setProfiles(students);
       setMentors(mentorProfiles);

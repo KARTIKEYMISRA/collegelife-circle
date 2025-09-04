@@ -21,7 +21,6 @@ import {
   X,
   BookOpen,
   Search,
-  
   BarChart3,
   UserPlus,
   Handshake,
@@ -30,6 +29,7 @@ import {
   Rss
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { NotificationSystem } from "@/components/notifications/NotificationSystem";
 
 interface Profile {
   id: string;
@@ -120,6 +120,9 @@ export const Navbar = ({ user, profile, currentPage, onPageChange }: NavbarProps
 
           {/* User Menu */}
           <div className="flex items-center space-x-4">
+            {/* Notifications */}
+            <NotificationSystem currentUser={user} />
+            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">

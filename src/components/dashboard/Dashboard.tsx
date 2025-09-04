@@ -12,6 +12,7 @@ import {
   Users,
   UserPlus
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { GoalManager } from "@/components/goals/GoalManager";
 import { StudyHourTracker } from "@/components/study/StudyHourTracker";
 import { AchievementManager } from "@/components/achievements/AchievementManager";
@@ -23,7 +24,51 @@ interface DashboardProps {
 export const Dashboard = ({ user }: DashboardProps) => {
   const [streakCount, setStreakCount] = useState(7);
   const [todayCheckedIn, setTodayCheckedIn] = useState(false);
-  const [connections, setConnections] = useState(42);
+  const [connections, setConnections] = useState(0);
+  const [connectedUsers, setConnectedUsers] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (user) {
+      fetchConnectionsData();
+    }
+  }, [user]);
+
+  const fetchConnectionsData = async () => {
+    try {
+      // Fetch user's profile for connection count
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('connections_count')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profile) {
+        setConnections(profile.connections_count || 0);
+      }
+
+      // Fetch connected users (recent connections)
+      const { data: connectionsData } = await supabase
+        .from('connections')
+        .select(`
+          *,
+          user1:profiles!connections_user1_id_fkey(full_name, profile_picture_url),
+          user2:profiles!connections_user2_id_fkey(full_name, profile_picture_url)
+        `)
+        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      if (connectionsData) {
+        const users = connectionsData.map(conn => {
+          const otherUser = conn.user1_id === user.id ? conn.user2 : conn.user1;
+          return otherUser;
+        }).filter(Boolean);
+        setConnectedUsers(users);
+      }
+    } catch (error) {
+      console.error('Error fetching connections:', error);
+    }
+  };
 
   const handleDailyCheckIn = () => {
     setTodayCheckedIn(true);
@@ -110,14 +155,20 @@ export const Dashboard = ({ user }: DashboardProps) => {
             </CardHeader>
             <CardContent className="relative pt-0">
               <div className="space-y-2">
-                {["Alex Chen", "Sarah Kim", "Mike Johnson"].map((name, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs">
-                      {name.charAt(0)}
+                {connectedUsers.length > 0 ? (
+                  connectedUsers.map((connectedUser, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs">
+                        {connectedUser?.full_name?.charAt(0) || '?'}
+                      </div>
+                      <span className="text-sm text-foreground">{connectedUser?.full_name || 'Unknown'}</span>
                     </div>
-                    <span className="text-sm text-foreground">{name}</span>
+                  ))
+                ) : (
+                  <div className="text-center py-2">
+                    <p className="text-sm text-muted-foreground">No connections yet</p>
                   </div>
-                ))}
+                )}
                 <Button variant="outline" size="sm" className="w-full mt-2">
                   View all
                 </Button>
