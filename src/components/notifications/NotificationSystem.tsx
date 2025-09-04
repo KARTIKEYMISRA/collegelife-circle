@@ -11,7 +11,10 @@ import {
   Check, 
   MessageCircle,
   Users,
-  Calendar
+  Calendar,
+  Heart,
+  FileText,
+  Mail
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -32,22 +35,37 @@ interface ConnectionRequest {
   sender_avatar?: string;
 }
 
+interface Notification {
+  id: string;
+  type: 'connection_request' | 'post_like' | 'post_comment' | 'new_message' | 'new_post';
+  title: string;
+  description: string;
+  created_at: string;
+  read: boolean;
+  user_name?: string;
+  user_avatar?: string;
+  icon?: any;
+  action_data?: any;
+}
+
 interface NotificationSystemProps {
   currentUser: any;
 }
 
 export const NotificationSystem = ({ currentUser }: NotificationSystemProps) => {
   const [connectionRequests, setConnectionRequests] = useState<ConnectionRequest[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
       fetchConnectionRequests();
+      fetchAllNotifications();
       
-      // Set up real-time subscription for connection requests
+      // Set up real-time subscriptions
       const channel = supabase
-        .channel('connection_requests')
+        .channel('all_notifications')
         .on(
           'postgres_changes',
           {
@@ -58,6 +76,7 @@ export const NotificationSystem = ({ currentUser }: NotificationSystemProps) => 
           },
           () => {
             fetchConnectionRequests();
+            fetchAllNotifications();
             toast({
               title: "New connection request",
               description: "You have a new connection request!",
@@ -67,12 +86,34 @@ export const NotificationSystem = ({ currentUser }: NotificationSystemProps) => 
         .on(
           'postgres_changes',
           {
-            event: 'UPDATE',
+            event: 'INSERT',
             schema: 'public',
-            table: 'connection_requests'
+            table: 'post_likes'
           },
-          () => {
-            fetchConnectionRequests();
+          (payload) => {
+            checkIfUserPost(payload.new.post_id, 'like');
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'post_comments'
+          },
+          (payload) => {
+            checkIfUserPost(payload.new.post_id, 'comment');
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages'
+          },
+          (payload) => {
+            checkIfUserMessage(payload.new.conversation_id);
           }
         )
         .subscribe();
@@ -110,6 +151,148 @@ export const NotificationSystem = ({ currentUser }: NotificationSystemProps) => 
       }));
 
       setConnectionRequests(requestsWithSenders);
+    }
+  };
+
+  const fetchAllNotifications = async () => {
+    if (!currentUser) return;
+
+    try {
+      // Fetch recent likes on user's posts
+      const { data: likesData } = await supabase
+        .from('post_likes')
+        .select(`
+          id,
+          created_at,
+          user_id,
+          post_id,
+          posts!inner(author_id, content)
+        `)
+        .eq('posts.author_id', currentUser.id)
+        .neq('user_id', currentUser.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      // Fetch recent comments on user's posts
+      const { data: commentsData } = await supabase
+        .from('post_comments')
+        .select(`
+          id,
+          created_at,
+          author_id,
+          content,
+          post_id,
+          posts!inner(author_id)
+        `)
+        .eq('posts.author_id', currentUser.id)
+        .neq('author_id', currentUser.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      // Fetch recent messages
+      const { data: messagesData } = await supabase
+        .from('messages')
+        .select(`
+          id,
+          created_at,
+          sender_id,
+          content,
+          conversation_id,
+          conversations!inner(participant1_id, participant2_id)
+        `)
+        .or(`conversations.participant1_id.eq.${currentUser.id},conversations.participant2_id.eq.${currentUser.id}`)
+        .neq('sender_id', currentUser.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      // Get user details for all notifications
+      const userIds = new Set([
+        ...(likesData?.map(l => l.user_id) || []),
+        ...(commentsData?.map(c => c.author_id) || []),
+        ...(messagesData?.map(m => m.sender_id) || [])
+      ]);
+
+      const { data: users } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, profile_picture_url')
+        .in('user_id', Array.from(userIds));
+
+      const usersMap = new Map(users?.map(u => [u.user_id, u]) || []);
+
+      // Build notifications array
+      const allNotifications: Notification[] = [
+        ...(likesData?.map(like => ({
+          id: `like_${like.id}`,
+          type: 'post_like' as const,
+          title: 'Post Liked',
+          description: `${usersMap.get(like.user_id)?.full_name || 'Someone'} liked your post`,
+          created_at: like.created_at,
+          read: false,
+          user_name: usersMap.get(like.user_id)?.full_name,
+          user_avatar: usersMap.get(like.user_id)?.profile_picture_url,
+          icon: Heart
+        })) || []),
+        ...(commentsData?.map(comment => ({
+          id: `comment_${comment.id}`,
+          type: 'post_comment' as const,
+          title: 'New Comment',
+          description: `${usersMap.get(comment.author_id)?.full_name || 'Someone'} commented on your post`,
+          created_at: comment.created_at,
+          read: false,
+          user_name: usersMap.get(comment.author_id)?.full_name,
+          user_avatar: usersMap.get(comment.author_id)?.profile_picture_url,
+          icon: MessageCircle
+        })) || []),
+        ...(messagesData?.map(message => ({
+          id: `message_${message.id}`,
+          type: 'new_message' as const,
+          title: 'New Message',
+          description: `${usersMap.get(message.sender_id)?.full_name || 'Someone'} sent you a message`,
+          created_at: message.created_at,
+          read: false,
+          user_name: usersMap.get(message.sender_id)?.full_name,
+          user_avatar: usersMap.get(message.sender_id)?.profile_picture_url,
+          icon: Mail
+        })) || [])
+      ];
+
+      // Sort by date
+      allNotifications.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setNotifications(allNotifications.slice(0, 20));
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+  const checkIfUserPost = async (postId: string, type: 'like' | 'comment') => {
+    const { data: post } = await supabase
+      .from('posts')
+      .select('author_id')
+      .eq('id', postId)
+      .single();
+
+    if (post?.author_id === currentUser.id) {
+      fetchAllNotifications();
+      toast({
+        title: type === 'like' ? "New like" : "New comment",
+        description: `Someone ${type === 'like' ? 'liked' : 'commented on'} your post!`,
+      });
+    }
+  };
+
+  const checkIfUserMessage = async (conversationId: string) => {
+    const { data: conversation } = await supabase
+      .from('conversations')
+      .select('participant1_id, participant2_id')
+      .eq('id', conversationId)
+      .single();
+
+    if (conversation && (conversation.participant1_id === currentUser.id || conversation.participant2_id === currentUser.id)) {
+      fetchAllNotifications();
+      toast({
+        title: "New message",
+        description: "You have a new message!",
+      });
     }
   };
 
@@ -154,7 +337,7 @@ export const NotificationSystem = ({ currentUser }: NotificationSystemProps) => 
     setLoading(false);
   };
 
-  const unreadCount = connectionRequests.length;
+  const unreadCount = connectionRequests.length + notifications.length;
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -186,7 +369,7 @@ export const NotificationSystem = ({ currentUser }: NotificationSystemProps) => 
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            {connectionRequests.length === 0 ? (
+            {unreadCount === 0 ? (
               <div className="p-6 text-center text-muted-foreground">
                 <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
                 <p>No new notifications</p>
@@ -194,9 +377,10 @@ export const NotificationSystem = ({ currentUser }: NotificationSystemProps) => 
             ) : (
               <ScrollArea className="h-80">
                 <div className="space-y-1 p-2">
+                  {/* Connection Requests */}
                   {connectionRequests.map((request) => (
                     <div 
-                      key={request.id} 
+                      key={`connection_${request.id}`} 
                       className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
                     >
                       <div className="flex items-start space-x-3">
@@ -249,6 +433,40 @@ export const NotificationSystem = ({ currentUser }: NotificationSystemProps) => 
                       </div>
                     </div>
                   ))}
+
+                  {/* Other Notifications */}
+                  {notifications.map((notification) => {
+                    const IconComponent = notification.icon;
+                    return (
+                      <div 
+                        key={notification.id} 
+                        className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-start space-x-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={notification.user_avatar || ''} />
+                            <AvatarFallback>
+                              {notification.user_name?.[0] || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <IconComponent className="h-4 w-4 text-primary" />
+                              <span className="text-sm font-medium text-foreground">
+                                {notification.title}
+                              </span>
+                            </div>
+                            <p className="text-sm text-foreground">
+                              {notification.description}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {new Date(notification.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </ScrollArea>
             )}

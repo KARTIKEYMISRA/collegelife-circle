@@ -26,7 +26,9 @@ import {
   Camera,
   MessageCircle,
   UserPlus,
-  Share2
+  Share2,
+  FileText,
+  Heart
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -74,6 +76,16 @@ interface Project {
   status: string;
 }
 
+interface Post {
+  id: string;
+  content: string;
+  image_url?: string;
+  likes_count: number;
+  comments_count: number;
+  created_at: string;
+  author_id: string;
+}
+
 interface EnhancedProfilePageProps {
   user: any;
   viewMode?: boolean;
@@ -85,6 +97,7 @@ export const EnhancedProfilePage = ({ user, viewMode = false, profileUserId }: E
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
 
@@ -117,7 +130,8 @@ export const EnhancedProfilePage = ({ user, viewMode = false, profileUserId }: E
         fetchProfile(),
         fetchExperiences(),
         fetchSkills(),
-        fetchProjects()
+        fetchProjects(),
+        fetchPosts()
       ]);
     } catch (error) {
       console.error('Error fetching profile data:', error);
@@ -173,6 +187,17 @@ export const EnhancedProfilePage = ({ user, viewMode = false, profileUserId }: E
 
     if (error) throw error;
     setProjects(data || []);
+  };
+
+  const fetchPosts = async () => {
+    const { data, error } = await supabase
+      .from("posts")
+      .select("*")
+      .eq("author_id", targetUserId)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    setPosts(data || []);
   };
 
   const saveProfile = async () => {
@@ -580,6 +605,57 @@ export const EnhancedProfilePage = ({ user, viewMode = false, profileUserId }: E
                 ) : (
                   <p className="text-muted-foreground text-center py-8">
                     No projects to display
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Posts Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Posts
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {posts.length > 0 ? (
+                  <div className="space-y-4">
+                    {posts.map((post) => (
+                      <Card key={post.id} className="border border-border">
+                        <CardContent className="p-4">
+                          <p className="text-sm text-foreground mb-3">
+                            {post.content}
+                          </p>
+                          {post.image_url && (
+                            <div className="mb-3">
+                              <img 
+                                src={post.image_url} 
+                                alt="Post image" 
+                                className="rounded-lg w-full max-h-64 object-cover"
+                              />
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <div className="flex items-center gap-4">
+                              <span className="flex items-center gap-1">
+                                <Heart className="h-3 w-3" />
+                                {post.likes_count} likes
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <MessageCircle className="h-3 w-3" />
+                                {post.comments_count} comments
+                              </span>
+                            </div>
+                            <span>{new Date(post.created_at).toLocaleDateString()}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">
+                    No posts to display
                   </p>
                 )}
               </CardContent>
