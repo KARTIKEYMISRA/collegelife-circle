@@ -106,7 +106,7 @@ export const NotificationSystem = ({ currentUser }: NotificationSystemProps) => 
       const requestsWithSenders = requestsData.map(req => ({
         ...req,
         sender_name: sendersMap.get(req.sender_id)?.full_name || 'Unknown',
-        sender_avatar: sendersMap.get(req.sender_id)?.profile_picture_url
+        sender_avatar: sendersMap.get(req.sender_id)?.profile_picture_url || ''
       }));
 
       setConnectionRequests(requestsWithSenders);
@@ -200,12 +200,12 @@ export const NotificationSystem = ({ currentUser }: NotificationSystemProps) => 
                       className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
                     >
                       <div className="flex items-start space-x-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={request.sender_avatar} />
-                          <AvatarFallback>
-                            {request.sender_name?.[0]}
-                          </AvatarFallback>
-                        </Avatar>
+                         <Avatar className="h-10 w-10">
+                           <AvatarImage src={request.sender_avatar || ''} />
+                           <AvatarFallback>
+                             {request.sender_name?.[0] || '?'}
+                           </AvatarFallback>
+                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-2 mb-1">
                             <UserPlus className="h-4 w-4 text-primary" />
