@@ -881,6 +881,20 @@ export type Database = {
         Args: { request_id: string }
         Returns: undefined
       }
+      get_public_profile_info: {
+        Args: { profile_user_id: string }
+        Returns: {
+          bio: string
+          department: string
+          full_name: string
+          id: string
+          institution_id: string
+          profile_picture_url: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+          year_of_study: number
+        }[]
+      }
     }
     Enums: {
       user_role: "student" | "mentor" | "teacher" | "authority"
