@@ -434,28 +434,28 @@ export const NotificationSystem = ({ currentUser }: NotificationSystemProps) => 
                     </div>
                   ))}
 
-                  {/* Other Notifications */}
-                  {notifications.map((notification) => {
-                    const IconComponent = notification.icon;
-                    return (
-                      <div 
-                        key={notification.id} 
-                        className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
-                      >
-                        <div className="flex items-start space-x-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage src={notification.user_avatar || ''} />
-                            <AvatarFallback>
-                              {notification.user_name?.[0] || '?'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center space-x-2 mb-1">
-                              <IconComponent className="h-4 w-4 text-primary" />
-                              <span className="text-sm font-medium text-foreground">
-                                {notification.title}
-                              </span>
-                            </div>
+                   {/* Other Notifications */}
+                   {notifications.map((notification) => {
+                     const IconComponent = notification.icon || Bell;
+                     return (
+                       <div 
+                         key={notification.id} 
+                         className="p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+                       >
+                         <div className="flex items-start space-x-3">
+                           <Avatar className="h-10 w-10">
+                             <AvatarImage src={notification.user_avatar || ''} />
+                             <AvatarFallback>
+                               {notification.user_name?.[0] || '?'}
+                             </AvatarFallback>
+                           </Avatar>
+                           <div className="flex-1 min-w-0">
+                             <div className="flex items-center space-x-2 mb-1">
+                               {IconComponent && <IconComponent className="h-4 w-4 text-primary" />}
+                               <span className="text-sm font-medium text-foreground">
+                                 {notification.title}
+                               </span>
+                             </div>
                             <p className="text-sm text-foreground">
                               {notification.description}
                             </p>
