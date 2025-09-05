@@ -155,26 +155,49 @@ export const ConnectPage = () => {
   };
 
   const fetchProfiles = async () => {
-    // Fetch all profiles first, then filter by institution if available
-    const { data: profilesData } = await supabase
-      .from('profiles')
-      .select('*')
-      .neq('user_id', currentUser.id);
+    try {
+      // Use the secure discovery function to get only non-sensitive profile data
+      const { data: discoveryProfiles, error } = await supabase
+        .rpc('get_discovery_profiles', { search_term: '' });
 
-    if (profilesData) {
-      // If current user has institution_id, prioritize same institution users
-      let filteredProfiles = profilesData;
-      if (currentProfile?.institution_id) {
-        const sameInstitution = profilesData.filter(p => p.institution_id === currentProfile.institution_id);
-        const otherInstitutions = profilesData.filter(p => p.institution_id !== currentProfile.institution_id);
-        filteredProfiles = [...sameInstitution, ...otherInstitutions];
+      if (error) {
+        console.error('Error fetching discovery profiles:', error);
+        return;
       }
 
-      const students = filteredProfiles.filter(p => p.role === 'student');
-      const mentorProfiles = filteredProfiles.filter(p => p.role === 'mentor' || p.role === 'teacher');
-      
-      setProfiles(students);
-      setMentors(mentorProfiles);
+      if (discoveryProfiles) {
+        // Convert the discovery profiles to the expected format
+        const formattedProfiles = discoveryProfiles.map(p => ({
+          id: p.user_id, // Use user_id as id for compatibility
+          user_id: p.user_id,
+          full_name: p.full_name || 'Unknown',
+          email: '', // Not available in discovery mode for security
+          role: p.role || 'student',
+          department: p.department || 'Unknown',
+          year_of_study: p.year_of_study,
+          bio: p.bio,
+          profile_picture_url: p.profile_picture_url,
+          institution_id: p.institution_id,
+          connections_count: 0, // Not available in discovery mode
+          daily_streak: 0 // Not available in discovery mode
+        }));
+
+        // If current user has institution_id, prioritize same institution users
+        let filteredProfiles = formattedProfiles;
+        if (currentProfile?.institution_id) {
+          const sameInstitution = formattedProfiles.filter(p => p.institution_id === currentProfile.institution_id);
+          const otherInstitutions = formattedProfiles.filter(p => p.institution_id !== currentProfile.institution_id);
+          filteredProfiles = [...sameInstitution, ...otherInstitutions];
+        }
+
+        const students = filteredProfiles.filter(p => p.role === 'student');
+        const mentorProfiles = filteredProfiles.filter(p => p.role === 'mentor' || p.role === 'teacher');
+        
+        setProfiles(students);
+        setMentors(mentorProfiles);
+      }
+    } catch (error) {
+      console.error('Error in fetchProfiles:', error);
     }
   };
 

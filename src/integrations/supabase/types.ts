@@ -881,6 +881,20 @@ export type Database = {
         Args: { request_id: string }
         Returns: undefined
       }
+      get_discovery_profiles: {
+        Args: { search_term?: string }
+        Returns: {
+          bio: string
+          department: string
+          full_name: string
+          institution_id: string
+          is_connected: boolean
+          profile_picture_url: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+          year_of_study: number
+        }[]
+      }
       get_public_profile_info: {
         Args: { profile_user_id: string }
         Returns: {
