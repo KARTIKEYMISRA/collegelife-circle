@@ -5,6 +5,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { 
   Heart, 
@@ -30,6 +33,7 @@ interface Post {
   likes_count: number;
   comments_count: number;
   created_at: string;
+  audience?: string[];
   author_name?: string;
   author_avatar?: string;
   author_role?: string;
@@ -58,6 +62,7 @@ interface Profile {
 export const FeedPage = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [newPostContent, setNewPostContent] = useState("");
+  const [selectedAudience, setSelectedAudience] = useState<string[]>(['all']);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
@@ -96,12 +101,19 @@ export const FeedPage = () => {
     try {
       setLoading(true);
       
-      // Fetch posts
-      const { data: postsData, error } = await supabase
+      // Fetch posts with audience filtering
+      let query = supabase
         .from('posts')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(20);
+
+      // Filter posts based on current user's role if not authority
+      if (currentProfile?.role !== 'authority') {
+        query = query.or(`audience.cs.{all},audience.cs.{${currentProfile?.role}}`);
+      }
+
+      const { data: postsData, error } = await query;
 
       if (error) throw error;
 
@@ -157,7 +169,8 @@ export const FeedPage = () => {
         .from('posts')
         .insert({
           author_id: currentUser.id,
-          content: newPostContent.trim()
+          content: newPostContent.trim(),
+          audience: selectedAudience
         })
         .select()
         .single();
@@ -176,6 +189,7 @@ export const FeedPage = () => {
 
       setPosts(prev => [newPost, ...prev]);
       setNewPostContent("");
+      setSelectedAudience(['all']);
 
       toast({
         title: "Success",
@@ -366,6 +380,38 @@ export const FeedPage = () => {
     }
   };
 
+  const handleAudienceChange = (audience: string, checked: boolean) => {
+    if (audience === 'all') {
+      setSelectedAudience(['all']);
+    } else {
+      if (checked) {
+        setSelectedAudience(prev => {
+          const newAudience = prev.filter(a => a !== 'all');
+          return [...newAudience, audience];
+        });
+      } else {
+        setSelectedAudience(prev => {
+          const newAudience = prev.filter(a => a !== audience);
+          return newAudience.length === 0 ? ['all'] : newAudience;
+        });
+      }
+    }
+  };
+
+  const getAudienceDisplay = (audience?: string[]) => {
+    if (!audience || audience.includes('all')) {
+      return 'Everyone';
+    }
+    return audience.map(a => a.charAt(0).toUpperCase() + a.slice(1)).join(', ');
+  };
+
+  const getAudienceColor = (audience?: string[]) => {
+    if (!audience || audience.includes('all')) {
+      return 'bg-gray-100 text-gray-800';
+    }
+    return 'bg-blue-100 text-blue-800';
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
@@ -434,6 +480,58 @@ export const FeedPage = () => {
             </div>
           </CardHeader>
           <CardContent>
+            {/* Audience Selection for Authority Users */}
+            {currentProfile?.role === 'authority' && (
+              <div className="mb-4 p-4 border rounded-lg bg-muted/50">
+                <Label className="text-sm font-medium mb-2 block">Select Audience:</Label>
+                <div className="flex flex-wrap gap-3">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="all"
+                      checked={selectedAudience.includes('all')}
+                      onCheckedChange={(checked) => handleAudienceChange('all', checked as boolean)}
+                    />
+                    <Label htmlFor="all" className="text-sm">Everyone</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="student"
+                      checked={selectedAudience.includes('student')}
+                      onCheckedChange={(checked) => handleAudienceChange('student', checked as boolean)}
+                      disabled={selectedAudience.includes('all')}
+                    />
+                    <Label htmlFor="student" className="text-sm">Students</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="teacher"
+                      checked={selectedAudience.includes('teacher')}
+                      onCheckedChange={(checked) => handleAudienceChange('teacher', checked as boolean)}
+                      disabled={selectedAudience.includes('all')}
+                    />
+                    <Label htmlFor="teacher" className="text-sm">Teachers</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="mentor"
+                      checked={selectedAudience.includes('mentor')}
+                      onCheckedChange={(checked) => handleAudienceChange('mentor', checked as boolean)}
+                      disabled={selectedAudience.includes('all')}
+                    />
+                    <Label htmlFor="mentor" className="text-sm">Mentors</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="dean"
+                      checked={selectedAudience.includes('dean')}
+                      onCheckedChange={(checked) => handleAudienceChange('dean', checked as boolean)}
+                      disabled={selectedAudience.includes('all')}
+                    />
+                    <Label htmlFor="dean" className="text-sm">Dean</Label>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Button size="sm" variant="ghost">
@@ -494,6 +592,18 @@ export const FeedPage = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
+                  {/* Audience Badge */}
+                  {post.audience && !post.audience.includes('all') && (
+                    <div className="mb-3">
+                      <Badge 
+                        variant="outline" 
+                        className={`${getAudienceColor(post.audience)} text-xs`}
+                      >
+                        📢 For {getAudienceDisplay(post.audience)}
+                      </Badge>
+                    </div>
+                  )}
+                  
                   <p className="mb-4 whitespace-pre-wrap">{post.content}</p>
                   
                   {post.image_url && (
