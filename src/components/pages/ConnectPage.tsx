@@ -170,7 +170,7 @@ export const ConnectPage = () => {
         const formattedProfiles = discoveryProfiles.map(p => ({
           id: p.user_id, // Use user_id as id for compatibility
           user_id: p.user_id,
-          full_name: p.full_name || 'Unknown',
+          full_name: p.full_name || 'Unknown User',
           email: '', // Not available in discovery mode for security
           role: p.role || 'student',
           department: p.department || 'Unknown',
@@ -191,7 +191,7 @@ export const ConnectPage = () => {
         }
 
         const students = filteredProfiles.filter(p => p.role === 'student');
-        const mentorProfiles = filteredProfiles.filter(p => p.role === 'mentor' || p.role === 'teacher');
+        const mentorProfiles = filteredProfiles.filter(p => p.role === 'mentor' || p.role === 'teacher' || p.role === 'authority');
         
         setProfiles(students);
         setMentors(mentorProfiles);
