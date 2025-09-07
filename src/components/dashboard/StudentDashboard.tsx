@@ -24,6 +24,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { GoalManager } from "@/components/goals/GoalManager";
 import { StudyHourTracker } from "@/components/study/StudyHourTracker";
 import { AchievementManager } from "@/components/achievements/AchievementManager";
+import { TaskManager } from "./TaskManager";
+import { CertificateManager } from "./CertificateManager";
+import { ProjectManager } from "./ProjectManager";
 
 interface Profile {
   id: string;
@@ -59,7 +62,7 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
       const { data: certsData } = await supabase
         .from('certificates')
         .select('*')
-        .eq('user_id', profile.id)
+        .eq('user_id', user.id)
         .limit(3);
 
       // Fetch projects
@@ -86,12 +89,8 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
       setProjects(projectsData || []);
       setClassmates(classmatesData);
       
-      // Mock upcoming tasks for now
-      setUpcomingTasks([
-        { id: 1, title: "Submit CS Project", due: "Tomorrow", priority: "high" },
-        { id: 2, title: "Math Assignment", due: "Friday", priority: "medium" },
-        { id: 3, title: "Read Chapter 5", due: "Next Week", priority: "low" },
-      ]);
+      // Initialize with empty tasks array - will be managed by TaskManager
+      setUpcomingTasks([]);
       
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -201,26 +200,7 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
               <CardDescription>Your assignments and deadlines</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {upcomingTasks.map((task) => (
-                  <div key={task.id} className="flex items-center justify-between p-3 border border-border/50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${getPriorityColor(task.priority)}`} />
-                      <div>
-                        <p className="font-medium">{task.title}</p>
-                        <p className="text-sm text-muted-foreground">Due {task.due}</p>
-                      </div>
-                    </div>
-                    <Badge variant={task.priority === 'high' ? 'destructive' : 'secondary'}>
-                      {task.priority}
-                    </Badge>
-                  </div>
-                ))}
-                <Button variant="outline" className="w-full">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Task
-                </Button>
-              </div>
+              <TaskManager tasks={upcomingTasks} onTasksChange={setUpcomingTasks} />
             </CardContent>
           </Card>
 
@@ -234,35 +214,11 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
               <CardDescription>Your active and completed projects</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {projects.length > 0 ? (
-                  projects.map((project: any) => (
-                    <div key={project.id} className="p-4 border border-border/50 rounded-lg">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-semibold">{project.title}</h3>
-                        <Badge variant={project.status === 'active' ? 'default' : 'secondary'}>
-                          {project.status}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-3">{project.description}</p>
-                      <Progress value={75} className="mb-2" />
-                      <div className="flex justify-between text-sm text-muted-foreground">
-                        <span>Progress: 75%</span>
-                        <span>Due: Soon</span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8">
-                    <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No projects yet</p>
-                    <Button variant="outline" className="mt-4">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Start New Project
-                    </Button>
-                  </div>
-                )}
-              </div>
+              <ProjectManager 
+                projects={projects} 
+                onProjectsChange={setProjects} 
+                userId={user.id} 
+              />
             </CardContent>
           </Card>
         </div>
@@ -314,26 +270,11 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {certificates.length > 0 ? (
-                  certificates.map((cert: any) => (
-                    <div key={cert.id} className="flex items-center gap-3 p-2 border border-border/50 rounded-lg">
-                      <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center">
-                        <Award className="h-5 w-5 text-yellow-500" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{cert.title}</p>
-                        <p className="text-xs text-muted-foreground">{cert.issuer}</p>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-4">
-                    <Award className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-sm text-muted-foreground">No certificates yet</p>
-                  </div>
-                )}
-              </div>
+              <CertificateManager 
+                certificates={certificates} 
+                onCertificatesChange={setCertificates} 
+                userId={user.id} 
+              />
             </CardContent>
           </Card>
         </div>
