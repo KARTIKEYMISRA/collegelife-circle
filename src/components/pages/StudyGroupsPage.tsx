@@ -1,9 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Users, 
   MapPin, 
@@ -14,96 +20,187 @@ import {
   Video,
   Coffee,
   Calendar,
-  Star
+  Star,
+  Trash2
 } from "lucide-react";
 
-const studyGroups = [
-  {
-    id: 1,
-    name: "Advanced Calculus Study Circle",
-    subject: "Mathematics",
-    members: 12,
-    maxMembers: 15,
-    location: "Library Room 201",
-    time: "Tuesdays 7 PM",
-    description: "Weekly study sessions for Calc III. We focus on problem-solving and exam prep.",
-    difficulty: "Advanced",
-    type: "In-person",
-    tags: ["calculus", "problem-solving", "exams"],
-    organizer: "Sarah Chen",
-    rating: 4.8,
-    nextSession: "Tomorrow at 7 PM"
-  },
-  {
-    id: 2,
-    name: "React Developers Unite",
-    subject: "Computer Science",
-    members: 8,
-    maxMembers: 10,
-    location: "Virtual",
-    time: "Sundays 3 PM",
-    description: "Build projects together and learn modern React patterns. All skill levels welcome!",
-    difficulty: "Intermediate",
-    type: "Virtual",
-    tags: ["react", "javascript", "projects"],
-    organizer: "Alex Rodriguez",
-    rating: 4.9,
-    nextSession: "Sunday at 3 PM"
-  },
-  {
-    id: 3,
-    name: "Organic Chemistry Lab Prep",
-    subject: "Chemistry",
-    members: 6,
-    maxMembers: 8,
-    location: "Chem Building Lounge",
-    time: "Fridays 5 PM",
-    description: "Prepare for lab sessions and review organic reactions over coffee.",
-    difficulty: "Intermediate",
-    type: "Hybrid",
-    tags: ["organic chemistry", "lab prep", "reactions"],
-    organizer: "Maria Johnson",
-    rating: 4.7,
-    nextSession: "Friday at 5 PM"
-  },
-  {
-    id: 4,
-    name: "Physics Problem Solvers",
-    subject: "Physics",
-    members: 15,
-    maxMembers: 20,
-    location: "Physics Lab 3",
-    time: "Wednesdays 6 PM",
-    description: "Tackle challenging physics problems together. Quantum mechanics focus this semester.",
-    difficulty: "Advanced",
-    type: "In-person",
-    tags: ["physics", "quantum mechanics", "problem solving"],
-    organizer: "David Kim",
-    rating: 4.6,
-    nextSession: "Wednesday at 6 PM"
-  }
-];
+interface StudyGroup {
+  id: string;
+  name: string;
+  subject: string;
+  description: string;
+  difficulty: string;
+  type: string;
+  location: string;
+  meeting_schedule: string;
+  max_members: number;
+  current_members: number;
+  created_by: string;
+  tags: string[];
+}
 
 export const StudyGroupsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [groups, setGroups] = useState<StudyGroup[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const { toast } = useToast();
+
+  const [formData, setFormData] = useState({
+    name: "",
+    subject: "",
+    description: "",
+    difficulty: "intermediate",
+    type: "virtual",
+    location: "",
+    meeting_schedule: "",
+    max_members: 15,
+    tags: ""
+  });
+
+  useEffect(() => {
+    fetchCurrentUser();
+    fetchGroups();
+  }, []);
+
+  const fetchCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUser(user);
+  };
+
+  const fetchGroups = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("study_groups")
+        .select("*")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setGroups(data || []);
+    } catch (error) {
+      console.error("Error fetching study groups:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateGroup = async () => {
+    if (!currentUser) {
+      toast({ title: "Please sign in to create study groups", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from("study_groups").insert({
+        name: formData.name,
+        subject: formData.subject,
+        description: formData.description,
+        difficulty: formData.difficulty,
+        type: formData.type,
+        location: formData.location,
+        meeting_schedule: formData.meeting_schedule,
+        max_members: formData.max_members,
+        current_members: 1,
+        created_by: currentUser.id,
+        tags: formData.tags.split(",").map(tag => tag.trim()),
+        is_active: true
+      });
+
+      if (error) throw error;
+
+      toast({ title: "Study group created successfully!" });
+      setIsCreateDialogOpen(false);
+      setFormData({
+        name: "",
+        subject: "",
+        description: "",
+        difficulty: "intermediate",
+        type: "virtual",
+        location: "",
+        meeting_schedule: "",
+        max_members: 15,
+        tags: ""
+      });
+      fetchGroups();
+    } catch (error: any) {
+      toast({ title: "Error creating study group", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeleteGroup = async (groupId: string) => {
+    if (!currentUser) return;
+
+    try {
+      const { error } = await supabase
+        .from("study_groups")
+        .delete()
+        .eq("id", groupId)
+        .eq("created_by", currentUser.id);
+
+      if (error) throw error;
+
+      toast({ title: "Study group deleted successfully!" });
+      fetchGroups();
+    } catch (error: any) {
+      toast({ title: "Error deleting study group", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleJoinGroup = async (groupId: string) => {
+    if (!currentUser) {
+      toast({ title: "Please sign in to join study groups", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from("group_memberships").insert({
+        group_id: groupId,
+        user_id: currentUser.id,
+        role: "member"
+      });
+
+      if (error) throw error;
+
+      // Update member count
+      const group = groups.find(g => g.id === groupId);
+      if (group) {
+        await supabase
+          .from("study_groups")
+          .update({ current_members: group.current_members + 1 })
+          .eq("id", groupId);
+      }
+
+      toast({ title: "Successfully joined the study group!" });
+      fetchGroups();
+    } catch (error: any) {
+      toast({ title: "Error joining study group", description: error.message, variant: "destructive" });
+    }
+  };
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case "Beginner": return "bg-green-500/10 text-green-500 border-green-500/20";
-      case "Intermediate": return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
-      case "Advanced": return "bg-red-500/10 text-red-500 border-red-500/20";
+      case "beginner": return "bg-green-500/10 text-green-500 border-green-500/20";
+      case "intermediate": return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20";
+      case "advanced": return "bg-red-500/10 text-red-500 border-red-500/20";
       default: return "bg-gray-500/10 text-gray-500 border-gray-500/20";
     }
   };
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case "Virtual": return <Video className="h-4 w-4" />;
-      case "In-person": return <Coffee className="h-4 w-4" />;
-      case "Hybrid": return <Users className="h-4 w-4" />;
+      case "virtual": return <Video className="h-4 w-4" />;
+      case "in-person": return <Coffee className="h-4 w-4" />;
+      case "hybrid": return <Users className="h-4 w-4" />;
       default: return <Users className="h-4 w-4" />;
     }
   };
+
+  const filteredGroups = groups.filter(group =>
+    group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    group.subject.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -126,146 +223,217 @@ export const StudyGroupsPage = () => {
               placeholder="Search study groups..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-background border-primary/20 focus:border-primary"
+              className="pl-10"
             />
           </div>
-          <Button className="btn-gradient text-primary-foreground gap-2">
-            <Plus className="h-4 w-4" />
-            Create Study Group
-          </Button>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Card className="text-center">
-            <CardContent className="pt-6">
-              <Users className="h-8 w-8 text-primary mx-auto mb-2" />
-              <div className="text-2xl font-bold">24</div>
-              <p className="text-sm text-muted-foreground">Active Groups</p>
-            </CardContent>
-          </Card>
-          <Card className="text-center">
-            <CardContent className="pt-6">
-              <BookOpen className="h-8 w-8 text-accent mx-auto mb-2" />
-              <div className="text-2xl font-bold">12</div>
-              <p className="text-sm text-muted-foreground">Subjects Covered</p>
-            </CardContent>
-          </Card>
-          <Card className="text-center">
-            <CardContent className="pt-6">
-              <Calendar className="h-8 w-8 text-primary mx-auto mb-2" />
-              <div className="text-2xl font-bold">156</div>
-              <p className="text-sm text-muted-foreground">Weekly Sessions</p>
-            </CardContent>
-          </Card>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                Create Study Group
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Create New Study Group</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Group Name</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="e.g., Advanced Calculus Study Circle"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="subject">Subject</Label>
+                  <Input
+                    id="subject"
+                    value={formData.subject}
+                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                    placeholder="e.g., Mathematics"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Describe your study group"
+                    rows={4}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="difficulty">Difficulty</Label>
+                    <Select value={formData.difficulty} onValueChange={(value) => setFormData({ ...formData, difficulty: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="beginner">Beginner</SelectItem>
+                        <SelectItem value="intermediate">Intermediate</SelectItem>
+                        <SelectItem value="advanced">Advanced</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="type">Meeting Type</Label>
+                    <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="virtual">Virtual</SelectItem>
+                        <SelectItem value="in-person">In-person</SelectItem>
+                        <SelectItem value="hybrid">Hybrid</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location</Label>
+                  <Input
+                    id="location"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    placeholder="e.g., Library Room 201 or Zoom"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="schedule">Meeting Schedule</Label>
+                  <Input
+                    id="schedule"
+                    value={formData.meeting_schedule}
+                    onChange={(e) => setFormData({ ...formData, meeting_schedule: e.target.value })}
+                    placeholder="e.g., Tuesdays 7 PM"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="max_members">Max Members</Label>
+                  <Input
+                    id="max_members"
+                    type="number"
+                    value={formData.max_members}
+                    onChange={(e) => setFormData({ ...formData, max_members: parseInt(e.target.value) })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tags">Tags (comma-separated)</Label>
+                  <Input
+                    id="tags"
+                    value={formData.tags}
+                    onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+                    placeholder="e.g., calculus, problem-solving, exams"
+                  />
+                </div>
+                <Button onClick={handleCreateGroup} className="w-full">
+                  Create Study Group
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Study Groups Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {studyGroups.map((group) => (
-            <Card key={group.id} className="card-glow hover-lift group">
-              <CardHeader className="space-y-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex gap-2">
-                    <Badge className={getDifficultyColor(group.difficulty)}>
-                      {group.difficulty}
-                    </Badge>
-                    <Badge variant="outline" className="gap-1">
-                      {getTypeIcon(group.type)}
-                      {group.type}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-sm font-medium">{group.rating}</span>
-                  </div>
-                </div>
-                <div>
-                  <CardTitle className="group-hover:text-primary transition-colors">
-                    {group.name}
-                  </CardTitle>
-                  <CardDescription className="text-accent font-medium">
-                    {group.subject}
-                  </CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-muted-foreground text-sm">{group.description}</p>
-
-                {/* Tags */}
-                <div className="flex flex-wrap gap-1">
-                  {group.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-
-                {/* Group Details */}
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Users className="h-4 w-4" />
-                    <span>{group.members}/{group.maxMembers} members</span>
-                    <div className="w-16 bg-muted rounded-full h-2">
-                      <div 
-                        className="bg-primary h-2 rounded-full transition-all"
-                        style={{ width: `${(group.members / group.maxMembers) * 100}%` }}
-                      />
+        {loading ? (
+          <div className="text-center py-8">Loading study groups...</div>
+        ) : filteredGroups.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {filteredGroups.map((group) => (
+              <Card key={group.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex gap-2">
+                      <Badge className={getDifficultyColor(group.difficulty)}>
+                        {group.difficulty}
+                      </Badge>
+                      <Badge variant="outline" className="gap-1">
+                        {getTypeIcon(group.type)}
+                        {group.type}
+                      </Badge>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <MapPin className="h-4 w-4" />
-                    <span>{group.location}</span>
+                  <div>
+                    <CardTitle className="text-lg">{group.name}</CardTitle>
+                    <CardDescription className="font-medium">
+                      {group.subject}
+                    </CardDescription>
                   </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Clock className="h-4 w-4" />
-                    <span>{group.time}</span>
-                  </div>
-                </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-muted-foreground text-sm">{group.description}</p>
 
-                {/* Next Session */}
-                <div className="p-3 bg-primary/5 rounded-lg border border-primary/10">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-medium">Next Session</span>
+                  {/* Tags */}
+                  {group.tags && group.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {group.tags.map((tag) => (
+                        <Badge key={tag} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
                     </div>
-                    <span className="text-sm text-primary font-medium">{group.nextSession}</span>
-                  </div>
-                </div>
+                  )}
 
-                {/* Organizer and Actions */}
-                <div className="flex items-center justify-between pt-2 border-t border-border">
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-6 w-6">
-                      <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                        {group.organizer.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm font-medium">{group.organizer}</span>
+                  {/* Group Details */}
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Users className="h-4 w-4" />
+                      <span>{group.current_members}/{group.max_members} members</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <MapPin className="h-4 w-4" />
+                      <span>{group.location}</span>
+                    </div>
+                    {group.meeting_schedule && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Clock className="h-4 w-4" />
+                        <span>{group.meeting_schedule}</span>
+                      </div>
+                    )}
                   </div>
-                  <Button size="sm" className="btn-gradient text-primary-foreground">
-                    Join Group
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
 
-        {/* Create Group CTA */}
-        <div className="mt-12 text-center">
-          <Card className="max-w-lg mx-auto glass-effect">
-            <CardContent className="pt-6">
-              <Users className="h-12 w-12 text-primary mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Can't find the right group?</h3>
-              <p className="text-muted-foreground mb-4">Create your own study group and invite classmates to join!</p>
-              <Button className="btn-gradient text-primary-foreground">
-                Start Your Study Group
+                  {/* Actions */}
+                  <div className="flex gap-2 pt-2 border-t border-border">
+                    <Button 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => handleJoinGroup(group.id)}
+                    >
+                      Join Group
+                    </Button>
+                    {currentUser && group.created_by === currentUser.id && (
+                      <Button 
+                        size="sm" 
+                        variant="destructive"
+                        onClick={() => handleDeleteGroup(group.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">No study groups found</h3>
+              <p className="text-muted-foreground mb-6">
+                Be the first to create a study group!
+              </p>
+              <Button onClick={() => setIsCreateDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Study Group
               </Button>
             </CardContent>
           </Card>
-        </div>
+        )}
       </div>
     </div>
   );

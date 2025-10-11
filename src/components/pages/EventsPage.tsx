@@ -3,8 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Calendar, 
   MapPin, 
@@ -18,7 +22,9 @@ import {
   Coffee,
   Gamepad2,
   Heart,
-  Share2
+  Share2,
+  Edit,
+  Trash2
 } from "lucide-react";
 
 interface Event {
@@ -130,10 +136,28 @@ export const EventsPage = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const { toast } = useToast();
+
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    event_date: "",
+    location: "",
+    category: "other",
+    max_participants: 100
+  });
 
   useEffect(() => {
+    fetchCurrentUser();
     fetchEvents();
   }, []);
+
+  const fetchCurrentUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setCurrentUser(user);
+  };
 
   const fetchEvents = async () => {
     try {
@@ -206,6 +230,57 @@ export const EventsPage = () => {
     };
   };
 
+  const handleCreateEvent = async () => {
+    if (!currentUser) {
+      toast({ title: "Please sign in to create events", variant: "destructive" });
+      return;
+    }
+
+    try {
+      const { error } = await supabase.from("campus_events").insert({
+        ...formData,
+        created_by: currentUser.id,
+        current_participants: 0,
+        is_active: true
+      });
+
+      if (error) throw error;
+
+      toast({ title: "Event created successfully!" });
+      setIsCreateDialogOpen(false);
+      setFormData({
+        title: "",
+        description: "",
+        event_date: "",
+        location: "",
+        category: "other",
+        max_participants: 100
+      });
+      fetchEvents();
+    } catch (error: any) {
+      toast({ title: "Error creating event", description: error.message, variant: "destructive" });
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    if (!currentUser) return;
+
+    try {
+      const { error } = await supabase
+        .from("campus_events")
+        .delete()
+        .eq("id", eventId)
+        .eq("created_by", currentUser.id);
+
+      if (error) throw error;
+
+      toast({ title: "Event deleted successfully!" });
+      fetchEvents();
+    } catch (error: any) {
+      toast({ title: "Error deleting event", description: error.message, variant: "destructive" });
+    }
+  };
+
   const filteredEvents = events.filter(event => {
     const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          event.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -239,10 +314,92 @@ export const EventsPage = () => {
               className="pl-10"
             />
           </div>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Event
-          </Button>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Event
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Create New Event</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Event Title</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="Enter event title"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Describe your event"
+                    rows={4}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="event_date">Event Date & Time</Label>
+                    <Input
+                      id="event_date"
+                      type="datetime-local"
+                      value={formData.event_date}
+                      onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Category</Label>
+                    <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="academic">Academic</SelectItem>
+                        <SelectItem value="sports">Sports</SelectItem>
+                        <SelectItem value="technology">Technology</SelectItem>
+                        <SelectItem value="cultural">Cultural</SelectItem>
+                        <SelectItem value="career">Career</SelectItem>
+                        <SelectItem value="wellness">Wellness</SelectItem>
+                        <SelectItem value="entrepreneurship">Entrepreneurship</SelectItem>
+                        <SelectItem value="arts">Arts</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="location">Location</Label>
+                  <Input
+                    id="location"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    placeholder="Event location"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="max_participants">Max Participants</Label>
+                  <Input
+                    id="max_participants"
+                    type="number"
+                    value={formData.max_participants}
+                    onChange={(e) => setFormData({ ...formData, max_participants: parseInt(e.target.value) })}
+                    placeholder="100"
+                  />
+                </div>
+                <Button onClick={handleCreateEvent} className="w-full">
+                  Create Event
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Category Filters */}
@@ -328,11 +485,17 @@ export const EventsPage = () => {
                       <Button size="sm" className="flex-1">
                         Join Event
                       </Button>
+                      {currentUser && event.id.startsWith("mock") === false && (
+                        <Button 
+                          size="sm" 
+                          variant="destructive"
+                          onClick={() => handleDeleteEvent(event.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button size="sm" variant="outline">
                         <Heart className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Share2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </CardContent>
