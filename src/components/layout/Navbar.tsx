@@ -96,7 +96,7 @@ export const Navbar = ({ user, profile, currentPage, onPageChange }: NavbarProps
               <div className="p-2 bg-primary/10 rounded-lg">
                 <GraduationCap className="h-6 w-6 text-primary" />
               </div>
-              <span className="text-xl font-bold text-foreground">Colleaguee</span>
+              <span className="text-xl font-bold text-foreground">Colugee</span>
             </div>
           </div>
 
