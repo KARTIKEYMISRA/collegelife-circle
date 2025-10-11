@@ -11,7 +11,7 @@ export const Footer = () => {
           {/* Brand Section */}
           <div className="space-y-4">
             <h3 className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-              Colleaguee
+              Colugee
             </h3>
             <p className="text-muted-foreground text-sm leading-relaxed">
               Connecting college students worldwide. Build friendships, share knowledge, and create memories that last a lifetime.
@@ -90,15 +90,15 @@ export const Footer = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
             <div className="flex items-center space-x-2">
               <Mail className="h-4 w-4 text-primary" />
-              <span>support@colleaguee.com</span>
+              <span>mishrakartikey121@gmail.com</span>
             </div>
             <div className="flex items-center space-x-2">
               <Phone className="h-4 w-4 text-primary" />
-              <span>+1 (555) 123-4567</span>
+              <span>+91 9369563887</span>
             </div>
             <div className="flex items-center space-x-2">
               <MapPin className="h-4 w-4 text-primary" />
-              <span>Campus Hub, University District</span>
+              <span>Kanpur, UttarPradesh</span>
             </div>
           </div>
         </div>
@@ -106,7 +106,7 @@ export const Footer = () => {
         {/* Bottom Bar */}
         <div className="py-6 border-t border-border/50 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           <div className="text-sm text-muted-foreground">
-            © 2024 Colleaguee. All rights reserved.
+            © 2024 Colugee. All rights reserved.
           </div>
           <div className="flex items-center space-x-1 text-sm text-muted-foreground">
             <span>Made with</span>
