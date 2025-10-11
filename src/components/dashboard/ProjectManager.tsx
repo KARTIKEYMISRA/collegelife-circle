@@ -271,9 +271,21 @@ export const ProjectManager = ({ projects, onProjectsChange, userId }: ProjectMa
           </div>
         )}
         
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={isOpen} onOpenChange={(open) => {
+          setIsOpen(open);
+          if (!open) {
+            resetForm();
+          }
+        }}>
           <DialogTrigger asChild>
-            <Button variant="outline" className="w-full" onClick={resetForm}>
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              onClick={() => {
+                resetForm();
+                setIsOpen(true);
+              }}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Start New Project
             </Button>
