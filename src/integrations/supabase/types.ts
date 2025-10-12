@@ -68,6 +68,59 @@ export type Database = {
           },
         ]
       }
+      bookings: {
+        Row: {
+          booking_date: string
+          booking_status: string
+          created_at: string
+          event_id: string
+          id: string
+          payment_id: string | null
+          payment_status: string | null
+          seat_numbers: string[] | null
+          seats_booked: number
+          total_amount: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          booking_date?: string
+          booking_status?: string
+          created_at?: string
+          event_id: string
+          id?: string
+          payment_id?: string | null
+          payment_status?: string | null
+          seat_numbers?: string[] | null
+          seats_booked: number
+          total_amount: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          booking_date?: string
+          booking_status?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          payment_id?: string | null
+          payment_status?: string | null
+          seat_numbers?: string[] | null
+          seats_booked?: number
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campus_events: {
         Row: {
           category: string | null
@@ -277,6 +330,66 @@ export type Database = {
           minor?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      events: {
+        Row: {
+          available_seats: number | null
+          base_price: number
+          category: string
+          created_at: string
+          description: string
+          event_date: string
+          event_time: string
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          max_price: number | null
+          rating: number | null
+          title: string
+          total_seats: number | null
+          updated_at: string
+          venue_location: string
+          venue_name: string
+        }
+        Insert: {
+          available_seats?: number | null
+          base_price: number
+          category: string
+          created_at?: string
+          description: string
+          event_date: string
+          event_time: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          max_price?: number | null
+          rating?: number | null
+          title: string
+          total_seats?: number | null
+          updated_at?: string
+          venue_location: string
+          venue_name: string
+        }
+        Update: {
+          available_seats?: number | null
+          base_price?: number
+          category?: string
+          created_at?: string
+          description?: string
+          event_date?: string
+          event_time?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          max_price?: number | null
+          rating?: number | null
+          title?: string
+          total_seats?: number | null
+          updated_at?: string
+          venue_location?: string
+          venue_name?: string
         }
         Relationships: []
       }
@@ -734,6 +847,80 @@ export type Database = {
         }
         Relationships: []
       }
+      reviews: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          rating: number
+          review_text: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          rating: number
+          review_text?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          rating?: number
+          review_text?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      security_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          ip_address: unknown | null
+          new_values: Json | null
+          old_values: Json | null
+          record_id: string | null
+          table_name: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown | null
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          table_name?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       skills: {
         Row: {
           created_at: string
@@ -818,6 +1005,66 @@ export type Database = {
           tags?: string[] | null
           type?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      venues: {
+        Row: {
+          address: string
+          amenities: string[] | null
+          capacity: number
+          city: string
+          created_at: string
+          id: string
+          name: string
+          seat_layout: Json | null
+          state: string
+        }
+        Insert: {
+          address: string
+          amenities?: string[] | null
+          capacity: number
+          city: string
+          created_at?: string
+          id?: string
+          name: string
+          seat_layout?: Json | null
+          state: string
+        }
+        Update: {
+          address?: string
+          amenities?: string[] | null
+          capacity?: number
+          city?: string
+          created_at?: string
+          id?: string
+          name?: string
+          seat_layout?: Json | null
+          state?: string
         }
         Relationships: []
       }
@@ -912,8 +1159,20 @@ export type Database = {
           year_of_study: number
         }[]
       }
+      has_group_role: {
+        Args: { gid: string; required_role?: string; uid: string }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          check_role: Database["public"]["Enums"]["app_role"]
+          check_user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "admin" | "authority" | "teacher" | "mentor" | "student"
       user_role: "student" | "mentor" | "teacher" | "authority"
     }
     CompositeTypes: {
@@ -1042,6 +1301,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "authority", "teacher", "mentor", "student"],
       user_role: ["student", "mentor", "teacher", "authority"],
     },
   },

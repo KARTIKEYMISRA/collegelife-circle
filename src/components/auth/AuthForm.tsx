@@ -7,7 +7,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, GraduationCap, Sparkles, User, UserCheck, BrainCircuit, Shield, BookOpen } from "lucide-react";
+import { Loader2, GraduationCap, BrainCircuit, Shield, BookOpen } from "lucide-react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
 interface Institution {
   id: string;
@@ -30,40 +34,60 @@ const userRoles = [
   { value: "authority", label: "Authority (Dean/Director)", icon: Shield, description: "Administrative oversight and approvals" },
 ];
 
+// Validation schemas
+const signInSchema = z.object({
+  email: z.string().min(1, "Email or roll number is required").max(255, "Too long"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+const signUpSchema = z.object({
+  fullName: z.string().min(2, "Name must be at least 2 characters").max(100, "Name too long"),
+  rollNumber: z.string().min(1, "Roll number is required").max(50, "Roll number too long"),
+  role: z.enum(['student', 'mentor', 'teacher', 'authority'], {
+    required_error: "Please select a role",
+  }),
+  email: z.string().email("Invalid email address").max(255, "Email too long"),
+  password: z.string().min(6, "Password must be at least 6 characters").max(100, "Password too long"),
+});
+
 export const AuthForm = ({ institution, onBack }: AuthFormProps) => {
-  const [rollNumber, setRollNumber] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [selectedRole, setSelectedRole] = useState<string>("");
-  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedRole) {
-      toast({
-        title: "Role Required",
-        description: "Please select your role to continue.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
+  const signInForm = useForm<z.infer<typeof signInSchema>>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const signUpForm = useForm<z.infer<typeof signUpSchema>>({
+    resolver: zodResolver(signUpSchema),
+    defaultValues: {
+      fullName: "",
+      rollNumber: "",
+      role: undefined,
+      email: "",
+      password: "",
+    },
+  });
+
+  const handleSignUp = async (values: z.infer<typeof signUpSchema>) => {
     setLoading(true);
 
     try {
       const { error } = await supabase.auth.signUp({
-        email,
-        password,
+        email: values.email,
+        password: values.password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
-            full_name: fullName,
+            full_name: values.fullName,
             institution_id: institution.id,
             institution_code: institution.code,
-            institution_roll_number: rollNumber,
-            role: selectedRole,
+            institution_roll_number: values.rollNumber,
+            role: values.role,
           },
         },
       });
@@ -91,15 +115,14 @@ export const AuthForm = ({ institution, onBack }: AuthFormProps) => {
     }
   };
 
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSignIn = async (values: z.infer<typeof signInSchema>) => {
     setLoading(true);
 
     try {
       // First authenticate with Supabase
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: values.email,
+        password: values.password,
       });
 
       if (authError) {
@@ -190,133 +213,178 @@ export const AuthForm = ({ institution, onBack }: AuthFormProps) => {
             </TabsList>
             
             <TabsContent value="signin" className="space-y-4">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium">Email / Roll Number</Label>
-                  <Input
-                    id="email"
-                    type="text"
-                    placeholder="your.email@domain.com or roll number"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="bg-background/50 border-primary/20 focus:border-primary"
+              <Form {...signInForm}>
+                <form onSubmit={signInForm.handleSubmit(handleSignIn)} className="space-y-4">
+                  <FormField
+                    control={signInForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Email / Roll Number</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="your.email@domain.com or roll number"
+                            className="bg-background/50 border-primary/20 focus:border-primary"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="bg-background/50 border-primary/20 focus:border-primary"
+                  <FormField
+                    control={signInForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Password</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            placeholder="Enter your password"
+                            className="bg-background/50 border-primary/20 focus:border-primary"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <Button type="submit" className="w-full btn-gradient text-primary-foreground font-semibold" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Signing in...
-                    </>
-                  ) : (
-                    "Sign In"
-                  )}
-                </Button>
-              </form>
+                  <Button type="submit" className="w-full btn-gradient text-primary-foreground font-semibold" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Signing in...
+                      </>
+                    ) : (
+                      "Sign In"
+                    )}
+                  </Button>
+                </form>
+              </Form>
             </TabsContent>
             
             <TabsContent value="signup" className="space-y-4">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fullName" className="text-sm font-medium">Full Name</Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    placeholder="Your full name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                    className="bg-background/50 border-primary/20 focus:border-primary"
+              <Form {...signUpForm}>
+                <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-4">
+                  <FormField
+                    control={signUpForm.control}
+                    name="fullName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Full Name</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Your full name"
+                            className="bg-background/50 border-primary/20 focus:border-primary"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="rollNumber" className="text-sm font-medium">Institution ID / Roll Number</Label>
-                  <Input
-                    id="rollNumber"
-                    type="text"
-                    placeholder="e.g., 2021CS001, 21BCS001"
-                    value={rollNumber}
-                    onChange={(e) => setRollNumber(e.target.value)}
-                    required
-                    className="bg-background/50 border-primary/20 focus:border-primary"
+                  
+                  <FormField
+                    control={signUpForm.control}
+                    name="rollNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Institution ID / Roll Number</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="e.g., 2021CS001, 21BCS001"
+                            className="bg-background/50 border-primary/20 focus:border-primary"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="role" className="text-sm font-medium">Role</Label>
-                  <Select value={selectedRole} onValueChange={setSelectedRole} required>
-                    <SelectTrigger className="bg-background/50 border-primary/20 focus:border-primary">
-                      <SelectValue placeholder="Select your role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {userRoles.map((role) => {
-                        const IconComponent = role.icon;
-                        return (
-                          <SelectItem key={role.value} value={role.value}>
-                            <div className="flex items-center space-x-2">
-                              <IconComponent className="h-4 w-4" />
-                              <div className="flex flex-col">
-                                <span className="font-medium">{role.label}</span>
-                                <span className="text-xs text-muted-foreground">{role.description}</span>
-                              </div>
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="your.email@domain.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="bg-background/50 border-primary/20 focus:border-primary"
+                  <FormField
+                    control={signUpForm.control}
+                    name="role"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Role</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="bg-background/50 border-primary/20 focus:border-primary">
+                              <SelectValue placeholder="Select your role" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {userRoles.map((role) => {
+                              const IconComponent = role.icon;
+                              return (
+                                <SelectItem key={role.value} value={role.value}>
+                                  <div className="flex items-center space-x-2">
+                                    <IconComponent className="h-4 w-4" />
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{role.label}</span>
+                                      <span className="text-xs text-muted-foreground">{role.description}</span>
+                                    </div>
+                                  </div>
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Create a strong password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    className="bg-background/50 border-primary/20 focus:border-primary"
+                  
+                  <FormField
+                    control={signUpForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Email</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="email"
+                            placeholder="your.email@domain.com"
+                            className="bg-background/50 border-primary/20 focus:border-primary"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <Button type="submit" className="w-full btn-gradient text-primary-foreground font-semibold" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating your profile...
-                    </>
-                  ) : (
-                    "Join Colugee 🚀"
-                  )}
-                </Button>
-              </form>
+                  <FormField
+                    control={signUpForm.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Password</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            placeholder="Create a strong password"
+                            className="bg-background/50 border-primary/20 focus:border-primary"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="submit" className="w-full btn-gradient text-primary-foreground font-semibold" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating your profile...
+                      </>
+                    ) : (
+                      "Join Colugee 🚀"
+                    )}
+                  </Button>
+                </form>
+              </Form>
             </TabsContent>
           </Tabs>
           
