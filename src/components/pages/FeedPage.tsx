@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { ProfileViewPage } from "./ProfileViewPage";
 
 interface Post {
   id: string;
@@ -70,6 +71,17 @@ export const FeedPage = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+
+  // Show profile view if selected
+  if (selectedProfileId) {
+    return (
+      <ProfileViewPage 
+        profileId={selectedProfileId} 
+        onBack={() => setSelectedProfileId(null)}
+      />
+    );
+  }
 
   useEffect(() => {
     fetchCurrentUser();
@@ -570,7 +582,12 @@ export const FeedPage = () => {
                       </Avatar>
                       <div>
                         <div className="flex items-center space-x-2">
-                          <h3 className="font-semibold">{post.author_name}</h3>
+                          <h3 
+                            className="font-semibold cursor-pointer hover:text-primary transition-colors"
+                            onClick={() => setSelectedProfileId(post.author_id)}
+                          >
+                            {post.author_name}
+                          </h3>
                           {post.author_role && (
                             <Badge 
                               variant="secondary" 
@@ -677,7 +694,15 @@ export const FeedPage = () => {
                   <div className="flex-1">
                     <div className="bg-muted rounded-lg p-3">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium text-sm">{comment.author_name}</span>
+                        <span 
+                          className="font-medium text-sm cursor-pointer hover:text-primary transition-colors"
+                          onClick={() => {
+                            setIsCommentsOpen(false);
+                            setSelectedProfileId(comment.author_id);
+                          }}
+                        >
+                          {comment.author_name}
+                        </span>
                         <span className="text-xs text-muted-foreground">
                           {formatTimeAgo(comment.created_at)}
                         </span>

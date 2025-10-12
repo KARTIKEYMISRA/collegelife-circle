@@ -623,12 +623,12 @@ export const ConnectPage = () => {
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
-                        <span 
-                          className="cursor-pointer hover:text-primary transition-colors"
-                          onClick={() => setSelectedProfile(profile.user_id)}
-                        >
-                          {profile.full_name}
-                        </span>
+                          <CardTitle 
+                            className="text-base cursor-pointer hover:text-primary transition-colors"
+                            onClick={() => setSelectedProfile(profile.user_id)}
+                          >
+                            {profile.full_name}
+                          </CardTitle>
                           <div className="flex items-center text-sm text-muted-foreground">
                             <GraduationCap className="h-4 w-4 mr-1" />
                             {profile.year_of_study && `Year ${profile.year_of_study} • `}
@@ -727,7 +727,12 @@ export const ConnectPage = () => {
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
-                        <CardTitle className="text-xl">{mentor.full_name}</CardTitle>
+                        <CardTitle 
+                          className="text-xl cursor-pointer hover:text-primary transition-colors"
+                          onClick={() => setSelectedProfile(mentor.user_id)}
+                        >
+                          {mentor.full_name}
+                        </CardTitle>
                         <p className="text-sm text-muted-foreground capitalize">{mentor.role}</p>
                         <p className="text-sm font-medium text-primary">{mentor.department}</p>
                       </div>
