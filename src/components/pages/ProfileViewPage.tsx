@@ -89,15 +89,31 @@ export const ProfileViewPage = ({ profileId, onBack }: ProfileViewPageProps) => 
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      // Fetch profile
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', profileId)
-        .single();
+      // Fetch profile using the public profile function that bypasses RLS
+      const { data: profileData, error: profileError } = await supabase
+        .rpc('get_public_profile_info', { profile_user_id: profileId });
 
-      if (profileData) {
-        setProfile(profileData);
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        throw profileError;
+      }
+
+      if (profileData && profileData.length > 0) {
+        // The function returns an array, so get the first item
+        const profile = profileData[0];
+        setProfile({
+          id: profile.id,
+          user_id: profile.user_id,
+          full_name: profile.full_name,
+          email: '', // Email is not exposed for privacy
+          role: profile.role,
+          department: profile.department,
+          year_of_study: profile.year_of_study,
+          bio: profile.bio,
+          profile_picture_url: profile.profile_picture_url,
+          connections_count: 0, // Not available in public view
+          daily_streak: 0 // Not available in public view
+        });
 
         // Check connection status
         if (currentUser) {
