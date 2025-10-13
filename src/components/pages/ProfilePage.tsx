@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { User, Mail, Phone, BookOpen, Award, Plus, X } from "lucide-react";
+import { User, Mail, Phone, BookOpen, Award, Plus, X, Upload, Link as LinkIcon } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -21,6 +21,7 @@ interface Profile {
   bio?: string;
   profile_picture_url?: string;
   phone_number?: string;
+  role?: string;
 }
 
 interface EducationDetails {
@@ -126,11 +127,8 @@ export const ProfilePage = ({ user }: ProfilePageProps) => {
       const { error } = await supabase
         .from("profiles")
         .update({
-          full_name: profile.full_name,
-          student_id: profile.student_id,
-          year_of_study: profile.year_of_study,
-          department: profile.department,
           bio: profile.bio,
+          profile_picture_url: profile.profile_picture_url,
           phone_number: profile.phone_number,
         })
         .eq("user_id", user.id);
@@ -270,96 +268,89 @@ export const ProfilePage = ({ user }: ProfilePageProps) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Basic Information */}
+          {/* Profile Information */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <User className="h-5 w-5" />
-                <span>Basic Information</span>
+                <span>Profile Information</span>
               </CardTitle>
-              <CardDescription>Your personal and contact details</CardDescription>
+              <CardDescription>View your details and edit your profile</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-                  id="fullName"
-                  value={profile?.full_name || ""}
-                  onChange={(e) => setProfile(prev => prev ? { ...prev, full_name: e.target.value } : null)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  value={profile?.email || ""}
-                  disabled
-                  className="bg-muted"
-                />
+              {/* Non-editable fields */}
+              <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Full Name</Label>
+                  <p className="text-foreground font-medium">{profile?.full_name || "Not set"}</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Email</Label>
+                  <p className="text-foreground">{profile?.email || "Not set"}</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-muted-foreground">Role</Label>
+                  <p className="text-foreground capitalize">{profile?.role || "Student"}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">Department</Label>
+                    <p className="text-foreground">{profile?.department || "Not set"}</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-muted-foreground">Year</Label>
+                    <p className="text-foreground">
+                      {profile?.year_of_study ? `${profile.year_of_study}${profile.year_of_study === 1 ? 'st' : profile.year_of_study === 2 ? 'nd' : profile.year_of_study === 3 ? 'rd' : 'th'} Year` : "Not set"}
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="studentId">Student ID</Label>
-                <Input
-                  id="studentId"
-                  value={profile?.student_id || ""}
-                  onChange={(e) => setProfile(prev => prev ? { ...prev, student_id: e.target.value } : null)}
-                  placeholder="Enter your student ID"
-                />
-              </div>
+              {/* Editable fields */}
+              <div className="space-y-4 pt-4 border-t">
+                <h3 className="font-semibold text-sm">Editable Fields</h3>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="profilePicture">Profile Picture URL</Label>
+                  <div className="flex items-center space-x-2">
+                    <Upload className="h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="profilePicture"
+                      value={profile?.profile_picture_url || ""}
+                      onChange={(e) => setProfile(prev => prev ? { ...prev, profile_picture_url: e.target.value } : null)}
+                      placeholder="https://example.com/profile-pic.jpg"
+                    />
+                  </div>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  value={profile?.phone_number || ""}
-                  onChange={(e) => setProfile(prev => prev ? { ...prev, phone_number: e.target.value } : null)}
-                  placeholder="Your phone number"
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input
+                    id="phone"
+                    value={profile?.phone_number || ""}
+                    onChange={(e) => setProfile(prev => prev ? { ...prev, phone_number: e.target.value } : null)}
+                    placeholder="Your phone number"
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
-                <Input
-                  id="department"
-                  value={profile?.department || ""}
-                  onChange={(e) => setProfile(prev => prev ? { ...prev, department: e.target.value } : null)}
-                  placeholder="Computer Science, Engineering, etc."
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="year">Year of Study</Label>
-                <Select
-                  value={profile?.year_of_study?.toString() || ""}
-                  onValueChange={(value) => setProfile(prev => prev ? { ...prev, year_of_study: parseInt(value) } : null)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1st Year</SelectItem>
-                    <SelectItem value="2">2nd Year</SelectItem>
-                    <SelectItem value="3">3rd Year</SelectItem>
-                    <SelectItem value="4">4th Year</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  value={profile?.bio || ""}
-                  onChange={(e) => setProfile(prev => prev ? { ...prev, bio: e.target.value } : null)}
-                  placeholder="Tell others about yourself..."
-                  rows={3}
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="bio">About Me</Label>
+                  <Textarea
+                    id="bio"
+                    value={profile?.bio || ""}
+                    onChange={(e) => setProfile(prev => prev ? { ...prev, bio: e.target.value } : null)}
+                    placeholder="Tell others about yourself..."
+                    rows={4}
+                  />
+                </div>
               </div>
 
               <Button onClick={saveProfile} disabled={saving} className="w-full">
-                {saving ? "Saving..." : "Save Profile"}
+                {saving ? "Saving..." : "Save Changes"}
               </Button>
             </CardContent>
           </Card>
