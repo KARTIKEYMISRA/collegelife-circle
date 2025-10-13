@@ -46,6 +46,8 @@ const signUpSchema = z.object({
   role: z.enum(['student', 'mentor', 'teacher', 'authority'], {
     required_error: "Please select a role",
   }),
+  department: z.string().min(1, "Department/Branch is required").max(100, "Too long"),
+  yearOfStudy: z.string().optional(),
   email: z.string().email("Invalid email address").max(255, "Email too long"),
   password: z.string().min(6, "Password must be at least 6 characters").max(100, "Password too long"),
 });
@@ -68,6 +70,8 @@ export const AuthForm = ({ institution, onBack }: AuthFormProps) => {
       fullName: "",
       rollNumber: "",
       role: undefined,
+      department: "",
+      yearOfStudy: "",
       email: "",
       password: "",
     },
@@ -88,6 +92,8 @@ export const AuthForm = ({ institution, onBack }: AuthFormProps) => {
             institution_code: institution.code,
             institution_roll_number: values.rollNumber,
             role: values.role,
+            department: values.department,
+            year_of_study: values.yearOfStudy ? parseInt(values.yearOfStudy) : null,
           },
         },
       });
@@ -336,6 +342,51 @@ export const AuthForm = ({ institution, onBack }: AuthFormProps) => {
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={signUpForm.control}
+                    name="department"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Department / Branch</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="e.g., Computer Science, Electronics, Mechanical"
+                            className="bg-background/50 border-primary/20 focus:border-primary"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {signUpForm.watch("role") === "student" && (
+                    <FormField
+                      control={signUpForm.control}
+                      name="yearOfStudy"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium">Year of Study</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger className="bg-background/50 border-primary/20 focus:border-primary">
+                                <SelectValue placeholder="Select year" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="1">1st Year</SelectItem>
+                              <SelectItem value="2">2nd Year</SelectItem>
+                              <SelectItem value="3">3rd Year</SelectItem>
+                              <SelectItem value="4">4th Year</SelectItem>
+                              <SelectItem value="5">5th Year</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                   
                   <FormField
                     control={signUpForm.control}
