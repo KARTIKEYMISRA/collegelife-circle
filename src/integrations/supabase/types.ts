@@ -684,6 +684,7 @@ export type Database = {
         Row: {
           bio: string | null
           connections_count: number | null
+          cover_picture_url: string | null
           created_at: string
           daily_streak: number | null
           department: string
@@ -693,6 +694,7 @@ export type Database = {
           institution_id: string | null
           institution_roll_number: string | null
           last_activity_date: string | null
+          links: string[] | null
           phone_number: string | null
           profile_picture_url: string | null
           role: Database["public"]["Enums"]["user_role"] | null
@@ -704,6 +706,7 @@ export type Database = {
         Insert: {
           bio?: string | null
           connections_count?: number | null
+          cover_picture_url?: string | null
           created_at?: string
           daily_streak?: number | null
           department: string
@@ -713,6 +716,7 @@ export type Database = {
           institution_id?: string | null
           institution_roll_number?: string | null
           last_activity_date?: string | null
+          links?: string[] | null
           phone_number?: string | null
           profile_picture_url?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
@@ -724,6 +728,7 @@ export type Database = {
         Update: {
           bio?: string | null
           connections_count?: number | null
+          cover_picture_url?: string | null
           created_at?: string
           daily_streak?: number | null
           department?: string
@@ -733,6 +738,7 @@ export type Database = {
           institution_id?: string | null
           institution_roll_number?: string | null
           last_activity_date?: string | null
+          links?: string[] | null
           phone_number?: string | null
           profile_picture_url?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null

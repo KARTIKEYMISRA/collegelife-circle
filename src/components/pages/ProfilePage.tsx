@@ -20,8 +20,10 @@ interface Profile {
   department: string;
   bio?: string;
   profile_picture_url?: string;
+  cover_picture_url?: string;
   phone_number?: string;
   role?: string;
+  links?: string[];
 }
 
 interface EducationDetails {
@@ -46,6 +48,7 @@ export const ProfilePage = ({ user }: ProfilePageProps) => {
   const [saving, setSaving] = useState(false);
   const [newAchievement, setNewAchievement] = useState("");
   const [newCertification, setNewCertification] = useState("");
+  const [newLink, setNewLink] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -129,7 +132,9 @@ export const ProfilePage = ({ user }: ProfilePageProps) => {
         .update({
           bio: profile.bio,
           profile_picture_url: profile.profile_picture_url,
+          cover_picture_url: profile.cover_picture_url,
           phone_number: profile.phone_number,
+          links: profile.links,
         })
         .eq("user_id", user.id);
 
@@ -149,6 +154,23 @@ export const ProfilePage = ({ user }: ProfilePageProps) => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const addLink = () => {
+    if (!newLink.trim() || !profile) return;
+    setProfile({
+      ...profile,
+      links: [...(profile.links || []), newLink.trim()],
+    });
+    setNewLink("");
+  };
+
+  const removeLink = (index: number) => {
+    if (!profile) return;
+    setProfile({
+      ...profile,
+      links: (profile.links || []).filter((_, i) => i !== index),
+    });
   };
 
   const saveEducation = async () => {
@@ -328,6 +350,19 @@ export const ProfilePage = ({ user }: ProfilePageProps) => {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="coverPicture">Cover Picture URL</Label>
+                  <div className="flex items-center space-x-2">
+                    <Upload className="h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="coverPicture"
+                      value={profile?.cover_picture_url || ""}
+                      onChange={(e) => setProfile(prev => prev ? { ...prev, cover_picture_url: e.target.value } : null)}
+                      placeholder="https://example.com/cover-pic.jpg"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
                   <Input
                     id="phone"
@@ -346,6 +381,35 @@ export const ProfilePage = ({ user }: ProfilePageProps) => {
                     placeholder="Tell others about yourself..."
                     rows={4}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Links</Label>
+                  <div className="flex space-x-2">
+                    <Input
+                      value={newLink}
+                      onChange={(e) => setNewLink(e.target.value)}
+                      placeholder="Add a link (e.g., LinkedIn, GitHub)"
+                      onKeyPress={(e) => e.key === "Enter" && addLink()}
+                    />
+                    <Button type="button" onClick={addLink} size="sm">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {profile?.links?.map((link, index) => (
+                      <Badge key={index} variant="secondary" className="flex items-center space-x-1">
+                        <LinkIcon className="h-3 w-3" />
+                        <span className="truncate max-w-[200px]">{link}</span>
+                        <button
+                          onClick={() => removeLink(index)}
+                          className="ml-1 hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               </div>
 
