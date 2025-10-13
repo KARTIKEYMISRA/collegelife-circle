@@ -84,16 +84,6 @@ export const ConnectPage = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
-
-  // Show profile view if selected
-  if (selectedProfile) {
-    return (
-      <ProfileViewPage 
-        profileId={selectedProfile} 
-        onBack={() => setSelectedProfile(null)}
-      />
-    );
-  }
   
   // Create group form state
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
@@ -118,6 +108,16 @@ export const ConnectPage = () => {
       fetchData();
     }
   }, [currentUser]);
+
+  // Show profile view if selected (after all hooks)
+  if (selectedProfile) {
+    return (
+      <ProfileViewPage 
+        profileId={selectedProfile} 
+        onBack={() => setSelectedProfile(null)}
+      />
+    );
+  }
 
   const fetchCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();

@@ -73,16 +73,6 @@ export const FeedPage = () => {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
 
-  // Show profile view if selected
-  if (selectedProfileId) {
-    return (
-      <ProfileViewPage 
-        profileId={selectedProfileId} 
-        onBack={() => setSelectedProfileId(null)}
-      />
-    );
-  }
-
   useEffect(() => {
     fetchCurrentUser();
   }, []);
@@ -92,6 +82,16 @@ export const FeedPage = () => {
       fetchPosts();
     }
   }, [currentUser]);
+
+  // Show profile view if selected (after all hooks)
+  if (selectedProfileId) {
+    return (
+      <ProfileViewPage 
+        profileId={selectedProfileId} 
+        onBack={() => setSelectedProfileId(null)}
+      />
+    );
+  }
 
   const fetchCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
