@@ -158,8 +158,20 @@ const Index = () => {
   }
 
   const renderPage = () => {
+    if (!user || !profile) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <div className="text-center">
+            <p className="text-muted-foreground">Please log in to access this page</p>
+          </div>
+        </div>
+      );
+    }
+
     switch (currentPage) {
       case "profile":
+        return <ProfilePage user={user} />;
+      case "enhanced-profile":
         return <EnhancedProfilePage user={user} />;
       case "connect":
         return <ConnectPage />;
