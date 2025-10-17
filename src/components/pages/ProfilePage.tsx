@@ -337,29 +337,43 @@ export const ProfilePage = ({ user }: ProfilePageProps) => {
                 <h3 className="font-semibold text-sm">Editable Fields</h3>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="profilePicture">Profile Picture URL</Label>
-                  <div className="flex items-center space-x-2">
-                    <Upload className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="profilePicture"
-                      value={profile?.profile_picture_url || ""}
-                      onChange={(e) => setProfile(prev => prev ? { ...prev, profile_picture_url: e.target.value } : null)}
-                      placeholder="https://example.com/profile-pic.jpg"
-                    />
-                  </div>
+                  <Label htmlFor="profilePicture">Profile Picture</Label>
+                  <Input
+                    id="profilePicture"
+                    type="text"
+                    value={profile?.profile_picture_url || ""}
+                    onChange={(e) => setProfile(prev => prev ? { ...prev, profile_picture_url: e.target.value } : null)}
+                    placeholder="Enter image URL"
+                  />
+                  {profile?.profile_picture_url && (
+                    <div className="mt-2">
+                      <img 
+                        src={profile.profile_picture_url} 
+                        alt="Profile preview" 
+                        className="w-24 h-24 rounded-full object-cover border-2 border-border"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="coverPicture">Cover Picture URL</Label>
-                  <div className="flex items-center space-x-2">
-                    <Upload className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="coverPicture"
-                      value={profile?.cover_picture_url || ""}
-                      onChange={(e) => setProfile(prev => prev ? { ...prev, cover_picture_url: e.target.value } : null)}
-                      placeholder="https://example.com/cover-pic.jpg"
-                    />
-                  </div>
+                  <Label htmlFor="coverPicture">Cover Picture</Label>
+                  <Input
+                    id="coverPicture"
+                    type="text"
+                    value={profile?.cover_picture_url || ""}
+                    onChange={(e) => setProfile(prev => prev ? { ...prev, cover_picture_url: e.target.value } : null)}
+                    placeholder="Enter image URL"
+                  />
+                  {profile?.cover_picture_url && (
+                    <div className="mt-2">
+                      <img 
+                        src={profile.cover_picture_url} 
+                        alt="Cover preview" 
+                        className="w-full h-32 rounded-lg object-cover border-2 border-border"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
