@@ -157,6 +157,7 @@ export const ProfilePage = ({ user }: ProfilePageProps) => {
     }
   };
 
+
   const uploadImage = async (file: File, type: 'profile' | 'cover') => {
     if (!user) return;
     
