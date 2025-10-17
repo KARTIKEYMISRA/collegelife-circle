@@ -46,6 +46,7 @@ export const ProfilePage = ({ user }: ProfilePageProps) => {
   const [education, setEducation] = useState<EducationDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [newAchievement, setNewAchievement] = useState("");
   const [newCertification, setNewCertification] = useState("");
   const [newLink, setNewLink] = useState("");
@@ -153,6 +154,61 @@ export const ProfilePage = ({ user }: ProfilePageProps) => {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const uploadImage = async (file: File, type: 'profile' | 'cover') => {
+    if (!user) return;
+    
+    setUploading(true);
+    try {
+      // Delete old image if exists
+      const oldUrl = type === 'profile' ? profile?.profile_picture_url : profile?.cover_picture_url;
+      if (oldUrl) {
+        const oldPath = oldUrl.split('/').pop();
+        if (oldPath) {
+          await supabase.storage
+            .from('profiles')
+            .remove([`${user.id}/${oldPath}`]);
+        }
+      }
+
+      // Upload new image
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${type}_${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('profiles')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('profiles')
+        .getPublicUrl(filePath);
+
+      // Update profile state
+      if (type === 'profile') {
+        setProfile(prev => prev ? { ...prev, profile_picture_url: publicUrl } : null);
+      } else {
+        setProfile(prev => prev ? { ...prev, cover_picture_url: publicUrl } : null);
+      }
+
+      toast({
+        title: "Success",
+        description: `${type === 'profile' ? 'Profile' : 'Cover'} picture uploaded successfully`,
+      });
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload image",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -338,42 +394,52 @@ export const ProfilePage = ({ user }: ProfilePageProps) => {
                 
                 <div className="space-y-2">
                   <Label htmlFor="profilePicture">Profile Picture</Label>
-                  <Input
-                    id="profilePicture"
-                    type="text"
-                    value={profile?.profile_picture_url || ""}
-                    onChange={(e) => setProfile(prev => prev ? { ...prev, profile_picture_url: e.target.value } : null)}
-                    placeholder="Enter image URL"
-                  />
-                  {profile?.profile_picture_url && (
-                    <div className="mt-2">
-                      <img 
-                        src={profile.profile_picture_url} 
-                        alt="Profile preview" 
-                        className="w-24 h-24 rounded-full object-cover border-2 border-border"
-                      />
-                    </div>
-                  )}
+                  <div className="flex flex-col space-y-2">
+                    <Input
+                      id="profilePicture"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) uploadImage(file, 'profile');
+                      }}
+                      disabled={uploading}
+                    />
+                    {profile?.profile_picture_url && (
+                      <div className="mt-2">
+                        <img 
+                          src={profile.profile_picture_url} 
+                          alt="Profile preview" 
+                          className="w-24 h-24 rounded-full object-cover border-2 border-border"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="coverPicture">Cover Picture</Label>
-                  <Input
-                    id="coverPicture"
-                    type="text"
-                    value={profile?.cover_picture_url || ""}
-                    onChange={(e) => setProfile(prev => prev ? { ...prev, cover_picture_url: e.target.value } : null)}
-                    placeholder="Enter image URL"
-                  />
-                  {profile?.cover_picture_url && (
-                    <div className="mt-2">
-                      <img 
-                        src={profile.cover_picture_url} 
-                        alt="Cover preview" 
-                        className="w-full h-32 rounded-lg object-cover border-2 border-border"
-                      />
-                    </div>
-                  )}
+                  <div className="flex flex-col space-y-2">
+                    <Input
+                      id="coverPicture"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) uploadImage(file, 'cover');
+                      }}
+                      disabled={uploading}
+                    />
+                    {profile?.cover_picture_url && (
+                      <div className="mt-2">
+                        <img 
+                          src={profile.cover_picture_url} 
+                          alt="Cover preview" 
+                          className="w-full h-32 rounded-lg object-cover border-2 border-border"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="space-y-2">
