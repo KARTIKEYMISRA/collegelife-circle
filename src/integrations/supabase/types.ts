@@ -1151,6 +1151,18 @@ export type Database = {
           year_of_study: number
         }[]
       }
+      get_limited_profile_info: {
+        Args: { target_user_id: string }
+        Returns: {
+          bio: string
+          department: string
+          full_name: string
+          profile_picture_url: string
+          role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+          year_of_study: number
+        }[]
+      }
       get_public_profile_info: {
         Args: { profile_user_id: string }
         Returns: {
