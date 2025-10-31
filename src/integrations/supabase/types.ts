@@ -1163,7 +1163,7 @@ export type Database = {
           year_of_study: number
         }[]
       }
-      get_original_profile_values: {
+      get_original_protected_fields: {
         Args: { target_user_id: string }
         Returns: {
           department: string
@@ -1171,7 +1171,6 @@ export type Database = {
           full_name: string
           institution_id: string
           institution_roll_number: string
-          phone_number: string
           role: Database["public"]["Enums"]["user_role"]
           student_id: string
           year_of_study: number
