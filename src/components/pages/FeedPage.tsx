@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { 
   Heart, 
   MessageCircle, 
@@ -20,7 +22,10 @@ import {
   GraduationCap,
   Trophy,
   Calendar,
-  Plus
+  Plus,
+  Trash2,
+  Edit,
+  X
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -72,6 +77,12 @@ export const FeedPage = () => {
   const [newComment, setNewComment] = useState("");
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [deletePostId, setDeletePostId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchCurrentUser();
@@ -173,23 +184,84 @@ export const FeedPage = () => {
     }
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Error",
+          description: "Image must be less than 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      setUploadingImage(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${currentUser.id}_${Date.now()}.${fileExt}`;
+      const filePath = `posts/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('profiles')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('profiles')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload image",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const createPost = async () => {
     if (!newPostContent.trim() || !currentUser) return;
 
     try {
+      let imageUrl = null;
+      if (imageFile) {
+        imageUrl = await uploadImage(imageFile);
+        if (!imageUrl) return;
+      }
+
       const { data, error } = await supabase
         .from('posts')
         .insert({
           author_id: currentUser.id,
           content: newPostContent.trim(),
-          audience: selectedAudience
+          audience: selectedAudience,
+          image_url: imageUrl
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      // Add the new post to the beginning of the list
       const newPost: Post = {
         ...data,
         author_name: currentProfile?.full_name || 'You',
@@ -202,6 +274,7 @@ export const FeedPage = () => {
       setPosts(prev => [newPost, ...prev]);
       setNewPostContent("");
       setSelectedAudience(['all']);
+      removeImage();
 
       toast({
         title: "Success",
@@ -214,6 +287,92 @@ export const FeedPage = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const updatePost = async () => {
+    if (!editingPost || !newPostContent.trim()) return;
+
+    try {
+      let imageUrl = editingPost.image_url;
+      if (imageFile) {
+        imageUrl = await uploadImage(imageFile);
+        if (!imageUrl) return;
+      }
+
+      const { error } = await supabase
+        .from('posts')
+        .update({
+          content: newPostContent.trim(),
+          image_url: imageUrl,
+          audience: selectedAudience
+        })
+        .eq('id', editingPost.id);
+
+      if (error) throw error;
+
+      setPosts(prev => prev.map(p => 
+        p.id === editingPost.id 
+          ? { ...p, content: newPostContent.trim(), image_url: imageUrl, audience: selectedAudience }
+          : p
+      ));
+
+      setEditingPost(null);
+      setNewPostContent("");
+      setSelectedAudience(['all']);
+      removeImage();
+
+      toast({
+        title: "Success",
+        description: "Post updated successfully!",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update post",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deletePost = async (postId: string) => {
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId);
+
+      if (error) throw error;
+
+      setPosts(prev => prev.filter(p => p.id !== postId));
+      setDeletePostId(null);
+
+      toast({
+        title: "Success",
+        description: "Post deleted successfully!",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete post",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const startEditPost = (post: Post) => {
+    setEditingPost(post);
+    setNewPostContent(post.content);
+    setSelectedAudience(post.audience || ['all']);
+    if (post.image_url) {
+      setImagePreview(post.image_url);
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingPost(null);
+    setNewPostContent("");
+    setSelectedAudience(['all']);
+    removeImage();
   };
 
   const toggleLike = async (postId: string) => {
@@ -471,9 +630,19 @@ export const FeedPage = () => {
           </p>
         </div>
 
-        {/* Create Post */}
+        {/* Create/Edit Post */}
         <Card>
           <CardHeader>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold">
+                {editingPost ? 'Edit Post' : 'Create Post'}
+              </h3>
+              {editingPost && (
+                <Button variant="ghost" size="sm" onClick={cancelEdit}>
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
             <div className="flex items-center space-x-3">
               <Avatar className="h-10 w-10">
                 <AvatarImage src={currentProfile?.profile_picture_url} />
@@ -544,23 +713,62 @@ export const FeedPage = () => {
                 </div>
               </div>
             )}
+            
+            {/* Image Preview */}
+            {imagePreview && (
+              <div className="mb-4 relative">
+                <img 
+                  src={imagePreview} 
+                  alt="Preview" 
+                  className="rounded-lg max-h-64 w-auto object-cover"
+                />
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="absolute top-2 right-2"
+                  onClick={removeImage}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <Button size="sm" variant="ghost">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageSelect}
+                />
+                <Button 
+                  size="sm" 
+                  variant="ghost"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingImage}
+                >
                   <ImageIcon className="h-4 w-4 mr-2" />
                   Photo
                 </Button>
-                <Button size="sm" variant="ghost">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Event
-                </Button>
               </div>
               <Button 
-                onClick={createPost}
-                disabled={!newPostContent.trim()}
+                onClick={editingPost ? updatePost : createPost}
+                disabled={!newPostContent.trim() || uploadingImage}
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Post
+                {uploadingImage ? (
+                  "Uploading..."
+                ) : editingPost ? (
+                  <>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Update
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Post
+                  </>
+                )}
               </Button>
             </div>
           </CardContent>
@@ -603,9 +811,28 @@ export const FeedPage = () => {
                         </p>
                       </div>
                     </div>
-                    <Button size="sm" variant="ghost">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                    {currentUser && post.author_id === currentUser.id && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => startEditPost(post)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit Post
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => setDeletePostId(post.id)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Post
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -733,6 +960,27 @@ export const FeedPage = () => {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!deletePostId} onOpenChange={(open) => !open && setDeletePostId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Post</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this post? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={() => deletePostId && deletePost(deletePostId)}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
