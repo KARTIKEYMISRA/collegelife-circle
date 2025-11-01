@@ -555,6 +555,7 @@ export const FeedPage = () => {
     if (audience === 'all') {
       setSelectedAudience(['all']);
     } else {
+      // When selecting a specific audience, automatically uncheck "all"
       if (checked) {
         setSelectedAudience(prev => {
           const newAudience = prev.filter(a => a !== 'all');
@@ -679,36 +680,32 @@ export const FeedPage = () => {
                       id="student"
                       checked={selectedAudience.includes('student')}
                       onCheckedChange={(checked) => handleAudienceChange('student', checked as boolean)}
-                      disabled={selectedAudience.includes('all')}
                     />
-                    <Label htmlFor="student" className="text-sm">Students</Label>
+                    <Label htmlFor="student" className="text-sm cursor-pointer">Students</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="teacher"
                       checked={selectedAudience.includes('teacher')}
                       onCheckedChange={(checked) => handleAudienceChange('teacher', checked as boolean)}
-                      disabled={selectedAudience.includes('all')}
                     />
-                    <Label htmlFor="teacher" className="text-sm">Teachers</Label>
+                    <Label htmlFor="teacher" className="text-sm cursor-pointer">Teachers</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="mentor"
                       checked={selectedAudience.includes('mentor')}
                       onCheckedChange={(checked) => handleAudienceChange('mentor', checked as boolean)}
-                      disabled={selectedAudience.includes('all')}
                     />
-                    <Label htmlFor="mentor" className="text-sm">Mentors</Label>
+                    <Label htmlFor="mentor" className="text-sm cursor-pointer">Mentors</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
-                      id="dean"
-                      checked={selectedAudience.includes('dean')}
-                      onCheckedChange={(checked) => handleAudienceChange('dean', checked as boolean)}
-                      disabled={selectedAudience.includes('all')}
+                      id="authority"
+                      checked={selectedAudience.includes('authority')}
+                      onCheckedChange={(checked) => handleAudienceChange('authority', checked as boolean)}
                     />
-                    <Label htmlFor="dean" className="text-sm">Dean</Label>
+                    <Label htmlFor="authority" className="text-sm cursor-pointer">Authority</Label>
                   </div>
                 </div>
               </div>
