@@ -15,7 +15,8 @@ import {
   Shield,
   Calendar,
   BarChart3,
-  X
+  X,
+  Flame
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GoalManager } from "@/components/goals/GoalManager";
@@ -48,10 +49,72 @@ export const AuthorityDashboard = ({ user, profile }: AuthorityDashboardProps) =
     activeEvents: 0
   });
   const [loading, setLoading] = useState(true);
+  const [streakCount, setStreakCount] = useState(0);
+  const [todayCheckedIn, setTodayCheckedIn] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
+    checkStreakStatus();
   }, [user]);
+
+  const checkStreakStatus = async () => {
+    try {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('daily_streak, last_activity_date')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileData) {
+        setStreakCount(profileData.daily_streak || 0);
+        
+        // Check if user already checked in today
+        const today = new Date().toISOString().split('T')[0];
+        const lastActivity = profileData.last_activity_date;
+        setTodayCheckedIn(lastActivity === today);
+      }
+    } catch (error) {
+      console.error('Error checking streak status:', error);
+    }
+  };
+
+  const handleDailyCheckIn = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+      
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('daily_streak, last_activity_date')
+        .eq('user_id', user.id)
+        .single();
+
+      let newStreak = 1;
+      if (profileData?.last_activity_date === yesterday) {
+        // Consecutive day - increment streak
+        newStreak = (profileData.daily_streak || 0) + 1;
+      } else if (profileData?.last_activity_date === today) {
+        // Already checked in today
+        return;
+      }
+
+      // Update profile with new streak
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          daily_streak: newStreak,
+          last_activity_date: today
+        })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setStreakCount(newStreak);
+      setTodayCheckedIn(true);
+    } catch (error) {
+      console.error('Error updating streak:', error);
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -176,7 +239,30 @@ export const AuthorityDashboard = ({ user, profile }: AuthorityDashboardProps) =
       </div>
 
       {/* Institution Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <Card className="glass-effect hover-lift">
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center w-12 h-12 bg-orange-500/10 rounded-full mx-auto mb-2">
+              <Flame className="h-6 w-6 text-orange-500" />
+            </div>
+            <div className="text-2xl font-bold text-orange-500">{streakCount}</div>
+            <div className="text-sm text-muted-foreground mb-2">Day Streak</div>
+            {!todayCheckedIn ? (
+              <Button 
+                onClick={handleDailyCheckIn}
+                size="sm"
+                className="w-full text-xs"
+              >
+                Check In
+              </Button>
+            ) : (
+              <Badge variant="default" className="bg-green-500 text-xs">
+                ✓ Done!
+              </Badge>
+            )}
+          </CardContent>
+        </Card>
+
         <Card className="glass-effect hover-lift">
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center w-12 h-12 bg-blue-500/10 rounded-full mx-auto mb-2">
@@ -209,10 +295,10 @@ export const AuthorityDashboard = ({ user, profile }: AuthorityDashboardProps) =
 
         <Card className="glass-effect hover-lift">
           <CardContent className="p-4 text-center">
-            <div className="flex items-center justify-center w-12 h-12 bg-orange-500/10 rounded-full mx-auto mb-2">
-              <Calendar className="h-6 w-6 text-orange-500" />
+            <div className="flex items-center justify-center w-12 h-12 bg-amber-500/10 rounded-full mx-auto mb-2">
+              <Calendar className="h-6 w-6 text-amber-500" />
             </div>
-            <div className="text-2xl font-bold text-orange-500">{institutionStats.activeEvents}</div>
+            <div className="text-2xl font-bold text-amber-500">{institutionStats.activeEvents}</div>
             <div className="text-sm text-muted-foreground">Active Events</div>
           </CardContent>
         </Card>
