@@ -129,21 +129,33 @@ export const ConnectPage = () => {
       }
 
       if (discoveryProfiles) {
+        // Fetch actual connections_count and daily_streak for each profile
+        const userIds = discoveryProfiles.map(p => p.user_id);
+        const { data: profileStats } = await supabase
+          .from('profiles')
+          .select('user_id, connections_count, daily_streak')
+          .in('user_id', userIds);
+        
+        const statsMap = new Map(profileStats?.map(s => [s.user_id, s]) || []);
+        
         // Convert the discovery profiles to the expected format
-        const formattedProfiles = discoveryProfiles.map(p => ({
-          id: p.user_id, // Use user_id as id for compatibility
-          user_id: p.user_id,
-          full_name: p.full_name || 'Unknown User',
-          email: '', // Not available in discovery mode for security
-          role: p.role || 'student',
-          department: p.department || 'Unknown',
-          year_of_study: p.year_of_study,
-          bio: p.bio,
-          profile_picture_url: p.profile_picture_url,
-          institution_id: p.institution_id,
-          connections_count: 0, // Not available in discovery mode
-          daily_streak: 0 // Not available in discovery mode
-        }));
+        const formattedProfiles = discoveryProfiles.map(p => {
+          const stats = statsMap.get(p.user_id);
+          return {
+            id: p.user_id, // Use user_id as id for compatibility
+            user_id: p.user_id,
+            full_name: p.full_name || 'Unknown User',
+            email: '', // Not available in discovery mode for security
+            role: p.role || 'student',
+            department: p.department || 'Unknown',
+            year_of_study: p.year_of_study,
+            bio: p.bio,
+            profile_picture_url: p.profile_picture_url,
+            institution_id: p.institution_id,
+            connections_count: stats?.connections_count || 0,
+            daily_streak: stats?.daily_streak || 0
+          };
+        });
 
         // If current user has institution_id, prioritize same institution users
         let filteredProfiles = formattedProfiles;

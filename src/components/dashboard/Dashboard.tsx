@@ -22,7 +22,7 @@ interface DashboardProps {
 }
 
 export const Dashboard = ({ user }: DashboardProps) => {
-  const [streakCount, setStreakCount] = useState(7);
+  const [streakCount, setStreakCount] = useState(0);
   const [todayCheckedIn, setTodayCheckedIn] = useState(false);
   const [connections, setConnections] = useState(0);
   const [connectedUsers, setConnectedUsers] = useState<any[]>([]);
@@ -30,6 +30,7 @@ export const Dashboard = ({ user }: DashboardProps) => {
   useEffect(() => {
     if (user) {
       fetchConnectionsData();
+      checkStreakStatus();
     }
   }, [user]);
 
@@ -70,9 +71,63 @@ export const Dashboard = ({ user }: DashboardProps) => {
     }
   };
 
-  const handleDailyCheckIn = () => {
-    setTodayCheckedIn(true);
-    setStreakCount(prev => prev + 1);
+  const checkStreakStatus = async () => {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('daily_streak, last_activity_date')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profile) {
+        setStreakCount(profile.daily_streak || 0);
+        
+        // Check if user already checked in today
+        const today = new Date().toISOString().split('T')[0];
+        const lastActivity = profile.last_activity_date;
+        setTodayCheckedIn(lastActivity === today);
+      }
+    } catch (error) {
+      console.error('Error checking streak status:', error);
+    }
+  };
+
+  const handleDailyCheckIn = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+      
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('daily_streak, last_activity_date')
+        .eq('user_id', user.id)
+        .single();
+
+      let newStreak = 1;
+      if (profile?.last_activity_date === yesterday) {
+        // Consecutive day - increment streak
+        newStreak = (profile.daily_streak || 0) + 1;
+      } else if (profile?.last_activity_date === today) {
+        // Already checked in today
+        return;
+      }
+
+      // Update profile with new streak
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          daily_streak: newStreak,
+          last_activity_date: today
+        })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setStreakCount(newStreak);
+      setTodayCheckedIn(true);
+    } catch (error) {
+      console.error('Error updating streak:', error);
+    }
   };
 
   // Mock data for planner and projects
