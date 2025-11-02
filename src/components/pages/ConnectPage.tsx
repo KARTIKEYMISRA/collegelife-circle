@@ -54,6 +54,7 @@ interface ConnectionRequest {
 export const ConnectPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("students");
+  const [connectionFilter, setConnectionFilter] = useState<"all" | "connected" | "requested" | "not_connected">("all");
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [mentors, setMentors] = useState<Profile[]>([]);
   const [authorities, setAuthorities] = useState<Profile[]>([]);
@@ -305,22 +306,6 @@ export const ConnectPage = () => {
     }
   };
 
-  const filteredProfiles = profiles.filter(profile =>
-    profile.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    profile.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    profile.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const filteredMentors = mentors.filter(mentor =>
-    mentor.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    mentor.department.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const filteredAuthorities = authorities.filter(authority =>
-    authority.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    authority.department.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
 
   const getConnectionStatus = (profileId: string) => {
     const existingRequest = connectionRequests.find(req => 
@@ -336,6 +321,32 @@ export const ConnectPage = () => {
     }
     return 'none';
   };
+
+  const applyFilters = (profilesList: Profile[]) => {
+    return profilesList.filter(profile => {
+      // Apply search filter
+      const matchesSearch = 
+        profile.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        profile.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        profile.email.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      if (!matchesSearch) return false;
+      
+      // Apply connection status filter
+      const status = getConnectionStatus(profile.user_id);
+      
+      if (connectionFilter === "all") return true;
+      if (connectionFilter === "connected") return status === "connected";
+      if (connectionFilter === "requested") return status === "sent" || status === "received";
+      if (connectionFilter === "not_connected") return status === "none";
+      
+      return true;
+    });
+  };
+
+  const filteredProfiles = applyFilters(profiles);
+  const filteredMentors = applyFilters(mentors);
+  const filteredAuthorities = applyFilters(authorities);
 
   const pendingRequests = connectionRequests.filter(req => 
     req.receiver_id === currentUser?.id && req.status === 'pending'
@@ -414,8 +425,8 @@ export const ConnectPage = () => {
           </div>
         )}
 
-        {/* Search Bar */}
-        <div className="max-w-md mx-auto mb-8">
+        {/* Search and Filters */}
+        <div className="max-w-4xl mx-auto mb-8 space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
@@ -424,6 +435,41 @@ export const ConnectPage = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
+          </div>
+          
+          {/* Connection Status Filters */}
+          <div className="flex gap-2 justify-center flex-wrap">
+            <Button
+              variant={connectionFilter === "all" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setConnectionFilter("all")}
+            >
+              All
+            </Button>
+            <Button
+              variant={connectionFilter === "connected" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setConnectionFilter("connected")}
+            >
+              <CheckCircle className="h-4 w-4 mr-1" />
+              Connected
+            </Button>
+            <Button
+              variant={connectionFilter === "requested" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setConnectionFilter("requested")}
+            >
+              <Clock className="h-4 w-4 mr-1" />
+              Requested
+            </Button>
+            <Button
+              variant={connectionFilter === "not_connected" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setConnectionFilter("not_connected")}
+            >
+              <UserPlus className="h-4 w-4 mr-1" />
+              Not Connected
+            </Button>
           </div>
         </div>
 
