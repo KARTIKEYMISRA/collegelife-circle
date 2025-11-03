@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          announcement_type: string
+          content: string
+          created_at: string
+          created_by: string
+          id: string
+          institution_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          announcement_type: string
+          content: string
+          created_at?: string
+          created_by: string
+          id?: string
+          institution_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          announcement_type?: string
+          content?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          institution_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       approval_requests: {
         Row: {
           assigned_to: string | null
@@ -684,6 +717,7 @@ export type Database = {
         Row: {
           bio: string | null
           connections_count: number | null
+          Course: string | null
           cover_picture_url: string | null
           created_at: string
           daily_streak: number | null
@@ -706,6 +740,7 @@ export type Database = {
         Insert: {
           bio?: string | null
           connections_count?: number | null
+          Course?: string | null
           cover_picture_url?: string | null
           created_at?: string
           daily_streak?: number | null
@@ -728,6 +763,7 @@ export type Database = {
         Update: {
           bio?: string | null
           connections_count?: number | null
+          Course?: string | null
           cover_picture_url?: string | null
           created_at?: string
           daily_streak?: number | null

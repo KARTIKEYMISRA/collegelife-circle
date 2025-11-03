@@ -19,7 +19,10 @@ import {
   CheckCircle2,
   Star,
   Zap,
-  Flame
+  Flame,
+  Bell,
+  Megaphone,
+  Crown
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GoalManager } from "@/components/goals/GoalManager";
@@ -49,7 +52,8 @@ interface StudentDashboardProps {
 export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
   const [certificates, setCertificates] = useState([]);
   const [projects, setProjects] = useState([]);
-  const [classmates, setClassmates] = useState([]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [upcomingTasks, setUpcomingTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [streakCount, setStreakCount] = useState(0);
@@ -135,22 +139,27 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
         .eq('user_id', user.id)
         .limit(3);
 
-      // Fetch classmates from same institution
-      let classmatesData = [];
-      if (profile.institution_id) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('institution_id', profile.institution_id)
-          .eq('role', 'student')
-          .neq('user_id', user.id)
-          .limit(5);
-        classmatesData = data || [];
-      }
+      // Fetch announcements
+      const { data: announcementsData } = await supabase
+        .from('announcements')
+        .select(`
+          *,
+          profiles:created_by (full_name)
+        `)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      // Fetch leaderboard - top users by streak
+      const { data: leaderboardData } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, daily_streak, profile_picture_url, department')
+        .order('daily_streak', { ascending: false })
+        .limit(10);
 
       setCertificates(certsData || []);
       setProjects(projectsData || []);
-      setClassmates(classmatesData);
+      setAnnouncements(announcementsData || []);
+      setLeaderboard(leaderboardData || []);
       
       // Initialize with empty tasks array - will be managed by TaskManager
       setUpcomingTasks([]);
@@ -266,6 +275,58 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Announcements Section */}
+          <Card className="glass-effect border-l-4 border-l-primary">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Megaphone className="h-5 w-5 text-primary" />
+                Announcements
+              </CardTitle>
+              <CardDescription>Latest updates from authorities</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 max-h-80 overflow-y-auto">
+                {announcements.length > 0 ? (
+                  announcements.map((announcement) => (
+                    <div 
+                      key={announcement.id}
+                      className="p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="secondary" className="text-xs">
+                              {announcement.announcement_type === 'department_update' && 'Department'}
+                              {announcement.announcement_type === 'college_circular' && 'College'}
+                              {announcement.announcement_type === 'club_event' && 'Club/Event'}
+                              {announcement.announcement_type === 'authority_alert' && 'Alert'}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(announcement.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          <h4 className="font-semibold text-sm mb-1">{announcement.title}</h4>
+                          <p className="text-sm text-muted-foreground">{announcement.content}</p>
+                          {announcement.profiles && (
+                            <p className="text-xs text-muted-foreground mt-2">
+                              By: {announcement.profiles.full_name}
+                            </p>
+                          )}
+                        </div>
+                        <Bell className="h-4 w-4 text-primary flex-shrink-0" />
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Bell className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No announcements yet</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Upcoming Tasks */}
           <Card className="glass-effect">
             <CardHeader>
@@ -301,38 +362,58 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
 
         {/* Right Column */}
         <div className="space-y-6">
-          {/* Classmates */}
-          <Card className="glass-effect">
+          {/* Leaderboard */}
+          <Card className="glass-effect border-t-4 border-t-yellow-500">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
-                Classmates
+                <Crown className="h-5 w-5 text-yellow-500" />
+                Top Contributors
               </CardTitle>
-              <CardDescription>Connect with your peers</CardDescription>
+              <CardDescription>Streak Leaderboard</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {classmates.slice(0, 4).map((classmate: any) => (
-                  <div key={classmate.id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={classmate.profile_picture_url} />
-                        <AvatarFallback>{classmate.full_name?.charAt(0)}</AvatarFallback>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {leaderboard.length > 0 ? (
+                  leaderboard.map((leader, index) => (
+                    <div 
+                      key={leader.user_id}
+                      className={`flex items-center gap-3 p-2 rounded-lg ${
+                        leader.user_id === user.id ? 'bg-primary/10 border border-primary/20' : 'hover:bg-accent/5'
+                      } transition-colors`}
+                    >
+                      <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
+                        index === 0 ? 'bg-yellow-500 text-white' :
+                        index === 1 ? 'bg-gray-400 text-white' :
+                        index === 2 ? 'bg-orange-600 text-white' :
+                        'bg-muted text-muted-foreground'
+                      }`}>
+                        {index + 1}
+                      </div>
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={leader.profile_picture_url} />
+                        <AvatarFallback>{leader.full_name?.charAt(0)}</AvatarFallback>
                       </Avatar>
-                      <div>
-                        <p className="text-sm font-medium">{classmate.full_name}</p>
-                        <p className="text-xs text-muted-foreground">{classmate.department}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {leader.full_name}
+                          {leader.user_id === user.id && (
+                            <Badge variant="outline" className="ml-2 text-xs">You</Badge>
+                          )}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">{leader.department}</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Flame className="h-4 w-4 text-orange-500" />
+                        <span className="font-bold text-sm text-orange-500">{leader.daily_streak}</span>
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm">
-                      <MessageCircle className="h-4 w-4" />
-                    </Button>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Trophy className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No leaderboard data yet</p>
                   </div>
-                ))}
-                <Button variant="outline" className="w-full">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Find More Classmates
-                </Button>
+                )}
               </div>
             </CardContent>
           </Card>
