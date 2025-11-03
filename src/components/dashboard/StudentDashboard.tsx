@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Users, 
   Calendar, 
@@ -42,6 +44,8 @@ interface Profile {
   email: string;
   daily_streak: number;
   connections_count: number;
+  profile_picture_url?: string;
+  department: string;
 }
 
 interface StudentDashboardProps {
@@ -54,10 +58,14 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
   const [projects, setProjects] = useState([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [userRank, setUserRank] = useState<number | null>(null);
   const [upcomingTasks, setUpcomingTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [streakCount, setStreakCount] = useState(0);
   const [todayCheckedIn, setTodayCheckedIn] = useState(false);
+  const [connectionsDialogOpen, setConnectionsDialogOpen] = useState(false);
+  const [certificatesDialogOpen, setCertificatesDialogOpen] = useState(false);
+  const [allConnections, setAllConnections] = useState<any[]>([]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -156,6 +164,17 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
         .order('daily_streak', { ascending: false })
         .limit(10);
 
+      // Find user's rank
+      const { data: allUsersData } = await supabase
+        .from('profiles')
+        .select('user_id, daily_streak')
+        .order('daily_streak', { ascending: false });
+
+      if (allUsersData) {
+        const rank = allUsersData.findIndex(u => u.user_id === user.id) + 1;
+        setUserRank(rank);
+      }
+
       setCertificates(certsData || []);
       setProjects(projectsData || []);
       setAnnouncements(announcementsData || []);
@@ -168,6 +187,29 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
       console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAllConnections = async () => {
+    try {
+      const { data: connectionsData } = await supabase
+        .from('connections')
+        .select(`
+          *,
+          user1:profiles!connections_user1_id_fkey(user_id, full_name, profile_picture_url, department),
+          user2:profiles!connections_user2_id_fkey(user_id, full_name, profile_picture_url, department)
+        `)
+        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
+
+      if (connectionsData) {
+        const connections = connectionsData.map((conn: any) => {
+          const isUser1 = conn.user1_id === user.id;
+          return isUser1 ? conn.user2 : conn.user1;
+        });
+        setAllConnections(connections);
+      }
+    } catch (error) {
+      console.error('Error fetching connections:', error);
     }
   };
 
@@ -240,7 +282,13 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
           </CardContent>
         </Card>
 
-        <Card className="glass-effect hover-lift">
+        <Card 
+          className="glass-effect hover-lift cursor-pointer transition-all hover:scale-105"
+          onClick={() => {
+            fetchAllConnections();
+            setConnectionsDialogOpen(true);
+          }}
+        >
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center w-12 h-12 bg-accent/10 rounded-full mx-auto mb-2">
               <Users className="h-6 w-6 text-accent" />
@@ -250,7 +298,10 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
           </CardContent>
         </Card>
 
-        <Card className="glass-effect hover-lift">
+        <Card 
+          className="glass-effect hover-lift cursor-pointer transition-all hover:scale-105"
+          onClick={() => setCertificatesDialogOpen(true)}
+        >
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center w-12 h-12 bg-green-500/10 rounded-full mx-auto mb-2">
               <Trophy className="h-6 w-6 text-green-500" />
@@ -367,47 +418,76 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Crown className="h-5 w-5 text-yellow-500" />
-                Top Contributors
+                Top 10 Contributors
               </CardTitle>
               <CardDescription>Streak Leaderboard</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {leaderboard.length > 0 ? (
-                  leaderboard.map((leader, index) => (
-                    <div 
-                      key={leader.user_id}
-                      className={`flex items-center gap-3 p-2 rounded-lg ${
-                        leader.user_id === user.id ? 'bg-primary/10 border border-primary/20' : 'hover:bg-accent/5'
-                      } transition-colors`}
-                    >
-                      <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
-                        index === 0 ? 'bg-yellow-500 text-white' :
-                        index === 1 ? 'bg-gray-400 text-white' :
-                        index === 2 ? 'bg-orange-600 text-white' :
-                        'bg-muted text-muted-foreground'
-                      }`}>
-                        {index + 1}
+                  <>
+                    {leaderboard.map((leader, index) => (
+                      <div 
+                        key={leader.user_id}
+                        className={`flex items-center gap-3 p-2 rounded-lg ${
+                          leader.user_id === user.id ? 'bg-primary/10 border border-primary/20' : 'hover:bg-accent/5'
+                        } transition-colors`}
+                      >
+                        <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
+                          index === 0 ? 'bg-yellow-500 text-white' :
+                          index === 1 ? 'bg-gray-400 text-white' :
+                          index === 2 ? 'bg-orange-600 text-white' :
+                          'bg-muted text-muted-foreground'
+                        }`}>
+                          {index + 1}
+                        </div>
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage src={leader.profile_picture_url} />
+                          <AvatarFallback>{leader.full_name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {leader.full_name}
+                            {leader.user_id === user.id && (
+                              <Badge variant="outline" className="ml-2 text-xs">You</Badge>
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">{leader.department}</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Flame className="h-4 w-4 text-orange-500" />
+                          <span className="font-bold text-sm text-orange-500">{leader.daily_streak}</span>
+                        </div>
                       </div>
-                      <Avatar className="h-9 w-9">
-                        <AvatarImage src={leader.profile_picture_url} />
-                        <AvatarFallback>{leader.full_name?.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {leader.full_name}
-                          {leader.user_id === user.id && (
-                            <Badge variant="outline" className="ml-2 text-xs">You</Badge>
-                          )}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">{leader.department}</p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Flame className="h-4 w-4 text-orange-500" />
-                        <span className="font-bold text-sm text-orange-500">{leader.daily_streak}</span>
-                      </div>
-                    </div>
-                  ))
+                    ))}
+                    
+                    {/* Show user's rank if not in top 10 */}
+                    {userRank && userRank > 10 && (
+                      <>
+                        <div className="border-t border-dashed my-2" />
+                        <div className="flex items-center gap-3 p-2 rounded-lg bg-primary/10 border border-primary/20">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm bg-muted text-muted-foreground">
+                            {userRank}
+                          </div>
+                          <Avatar className="h-9 w-9">
+                            <AvatarImage src={profile.profile_picture_url} />
+                            <AvatarFallback>{profile.full_name?.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {profile.full_name}
+                              <Badge variant="outline" className="ml-2 text-xs">You</Badge>
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">{profile.department}</p>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Flame className="h-4 w-4 text-orange-500" />
+                            <span className="font-bold text-sm text-orange-500">{streakCount}</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     <Trophy className="h-12 w-12 mx-auto mb-2 opacity-50" />
@@ -454,6 +534,73 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
           <AchievementManager />
         </TabsContent>
       </Tabs>
+
+      {/* Connections Dialog */}
+      <Dialog open={connectionsDialogOpen} onOpenChange={setConnectionsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-accent" />
+              My Connections
+            </DialogTitle>
+            <DialogDescription>
+              You have {profile.connections_count} connection(s)
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="h-[500px] pr-4">
+            <div className="space-y-3">
+              {allConnections.length > 0 ? (
+                allConnections.map((connection: any) => (
+                  <div 
+                    key={connection.user_id}
+                    className="flex items-center gap-4 p-3 rounded-lg border hover:bg-accent/5 transition-colors"
+                  >
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={connection.profile_picture_url} />
+                      <AvatarFallback>{connection.full_name?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <p className="font-medium">{connection.full_name}</p>
+                      <p className="text-sm text-muted-foreground">{connection.department}</p>
+                    </div>
+                    <Button variant="ghost" size="sm">
+                      <MessageCircle className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Users className="h-16 w-16 mx-auto mb-3 opacity-50" />
+                  <p>No connections yet</p>
+                  <p className="text-sm mt-1">Start connecting with your peers!</p>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Certificates Management Dialog */}
+      <Dialog open={certificatesDialogOpen} onOpenChange={setCertificatesDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-green-500" />
+              My Certificates
+            </DialogTitle>
+            <DialogDescription>
+              Manage your certificates and achievements
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="h-[500px] pr-4">
+            <CertificateManager 
+              certificates={certificates} 
+              onCertificatesChange={setCertificates} 
+              userId={user.id} 
+            />
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
