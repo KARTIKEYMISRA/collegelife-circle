@@ -9,18 +9,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Users, 
-  Calendar, 
   Trophy, 
-  BookOpen, 
   MessageCircle,
-  Award,
   Flame,
   Bell,
   Megaphone,
   Crown
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { TaskManager } from "./TaskManager";
 import { CertificateManager } from "./CertificateManager";
 
 interface Profile {
@@ -47,7 +43,6 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [userRank, setUserRank] = useState<number | null>(null);
-  const [upcomingTasks, setUpcomingTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [streakCount, setStreakCount] = useState(0);
   const [todayCheckedIn, setTodayCheckedIn] = useState(false);
@@ -159,9 +154,6 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
       setCertificates(certsData || []);
       setAnnouncements(announcementsData || []);
       setLeaderboard(leaderboardData || []);
-      
-      // Initialize with empty tasks array - will be managed by TaskManager
-      setUpcomingTasks([]);
       
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -293,9 +285,9 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
       </div>
 
       {/* Main Dashboard Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6">
           {/* Announcements Section */}
           <Card className="glass-effect border-l-4 border-l-primary">
             <CardHeader>
@@ -345,20 +337,6 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
                   </div>
                 )}
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Upcoming Tasks */}
-          <Card className="glass-effect">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-primary" />
-                Upcoming Tasks
-              </CardTitle>
-              <CardDescription>Your assignments and deadlines</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <TaskManager tasks={upcomingTasks} onTasksChange={setUpcomingTasks} />
             </CardContent>
           </Card>
 
@@ -448,23 +426,6 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
                   </div>
                 )}
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Certificates */}
-          <Card className="glass-effect">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Award className="h-5 w-5 text-yellow-500" />
-                Recent Certificates
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CertificateManager 
-                certificates={certificates} 
-                onCertificatesChange={setCertificates} 
-                userId={user.id} 
-              />
             </CardContent>
           </Card>
         </div>
