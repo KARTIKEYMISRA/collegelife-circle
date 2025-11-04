@@ -130,6 +130,7 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
           *,
           profiles:created_by (full_name)
         `)
+        .or(`audience.cs.{all},audience.cs.{student}`)
         .order('created_at', { ascending: false })
         .limit(5);
 

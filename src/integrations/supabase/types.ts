@@ -17,6 +17,7 @@ export type Database = {
       announcements: {
         Row: {
           announcement_type: string
+          audience: string[] | null
           content: string
           created_at: string
           created_by: string
@@ -27,6 +28,7 @@ export type Database = {
         }
         Insert: {
           announcement_type: string
+          audience?: string[] | null
           content: string
           created_at?: string
           created_by: string
@@ -37,6 +39,7 @@ export type Database = {
         }
         Update: {
           announcement_type?: string
+          audience?: string[] | null
           content?: string
           created_at?: string
           created_by?: string

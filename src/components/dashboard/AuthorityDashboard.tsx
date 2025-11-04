@@ -16,11 +16,19 @@ import {
   Calendar,
   BarChart3,
   X,
-  Flame
+  Flame,
+  Megaphone
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { GoalManager } from "@/components/goals/GoalManager";
 import { AchievementManager } from "@/components/achievements/AchievementManager";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
 
 interface Profile {
   id: string;
@@ -51,6 +59,13 @@ export const AuthorityDashboard = ({ user, profile }: AuthorityDashboardProps) =
   const [loading, setLoading] = useState(true);
   const [streakCount, setStreakCount] = useState(0);
   const [todayCheckedIn, setTodayCheckedIn] = useState(false);
+  const [announcementDialogOpen, setAnnouncementDialogOpen] = useState(false);
+  const [announcementForm, setAnnouncementForm] = useState({
+    title: '',
+    content: '',
+    announcement_type: 'department_update',
+    audience: ['all']
+  });
 
   useEffect(() => {
     fetchDashboardData();
@@ -200,6 +215,66 @@ export const AuthorityDashboard = ({ user, profile }: AuthorityDashboardProps) =
       case "low": return "outline";
       case "urgent": return "destructive";
       default: return "secondary";
+    }
+  };
+
+  const handleAudienceChange = (role: string, checked: boolean) => {
+    if (role === 'all') {
+      setAnnouncementForm(prev => ({
+        ...prev,
+        audience: checked ? ['all'] : []
+      }));
+    } else {
+      setAnnouncementForm(prev => {
+        const currentAudience = prev.audience.filter(a => a !== 'all');
+        const newAudience = checked 
+          ? [...currentAudience, role]
+          : currentAudience.filter(a => a !== role);
+        
+        return {
+          ...prev,
+          audience: newAudience.length === 0 ? ['all'] : newAudience
+        };
+      });
+    }
+  };
+
+  const handleCreateAnnouncement = async () => {
+    if (!announcementForm.title.trim() || !announcementForm.content.trim()) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    if (announcementForm.audience.length === 0) {
+      toast.error('Please select at least one audience');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('announcements')
+        .insert({
+          title: announcementForm.title.trim(),
+          content: announcementForm.content.trim(),
+          announcement_type: announcementForm.announcement_type,
+          audience: announcementForm.audience,
+          created_by: user.id,
+          institution_id: profile.institution_id
+        });
+
+      if (error) throw error;
+
+      toast.success('Announcement created successfully');
+      setAnnouncementDialogOpen(false);
+      setAnnouncementForm({
+        title: '',
+        content: '',
+        announcement_type: 'department_update',
+        audience: ['all']
+      });
+    } catch (error) {
+      console.error('Error creating announcement:', error);
+      toast.error('Failed to create announcement');
     }
   };
 
@@ -421,8 +496,12 @@ export const AuthorityDashboard = ({ user, profile }: AuthorityDashboardProps) =
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button variant="outline" className="w-full justify-start">
-                <FileText className="h-4 w-4 mr-2" />
+              <Button 
+                variant="outline" 
+                className="w-full justify-start"
+                onClick={() => setAnnouncementDialogOpen(true)}
+              >
+                <Megaphone className="h-4 w-4 mr-2" />
                 Create Announcement
               </Button>
               <Button variant="outline" className="w-full justify-start">
@@ -496,6 +575,147 @@ export const AuthorityDashboard = ({ user, profile }: AuthorityDashboardProps) =
           <AchievementManager />
         </TabsContent>
       </Tabs>
+
+      {/* Create Announcement Dialog */}
+      <Dialog open={announcementDialogOpen} onOpenChange={setAnnouncementDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Megaphone className="h-5 w-5 text-primary" />
+              Create New Announcement
+            </DialogTitle>
+            <DialogDescription>
+              Share important updates with your institution members
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="title">Title *</Label>
+              <Input
+                id="title"
+                placeholder="Announcement title"
+                value={announcementForm.title}
+                onChange={(e) => setAnnouncementForm(prev => ({ ...prev, title: e.target.value }))}
+                maxLength={200}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="content">Content *</Label>
+              <Textarea
+                id="content"
+                placeholder="Announcement details..."
+                value={announcementForm.content}
+                onChange={(e) => setAnnouncementForm(prev => ({ ...prev, content: e.target.value }))}
+                rows={5}
+                maxLength={1000}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {announcementForm.content.length}/1000 characters
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="type">Announcement Type</Label>
+              <Select
+                value={announcementForm.announcement_type}
+                onValueChange={(value) => setAnnouncementForm(prev => ({ ...prev, announcement_type: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="department_update">Department Update</SelectItem>
+                  <SelectItem value="college_circular">College Circular</SelectItem>
+                  <SelectItem value="club_event">Club/Event Announcement</SelectItem>
+                  <SelectItem value="authority_alert">Authority Alert</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="mb-3 block">Target Audience *</Label>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="all"
+                    checked={announcementForm.audience.includes('all')}
+                    onCheckedChange={(checked) => handleAudienceChange('all', checked as boolean)}
+                  />
+                  <Label htmlFor="all" className="cursor-pointer font-normal">
+                    All Users (Everyone in the institution)
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="student"
+                    checked={announcementForm.audience.includes('student')}
+                    onCheckedChange={(checked) => handleAudienceChange('student', checked as boolean)}
+                    disabled={announcementForm.audience.includes('all')}
+                  />
+                  <Label htmlFor="student" className="cursor-pointer font-normal">
+                    Students
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="mentor"
+                    checked={announcementForm.audience.includes('mentor')}
+                    onCheckedChange={(checked) => handleAudienceChange('mentor', checked as boolean)}
+                    disabled={announcementForm.audience.includes('all')}
+                  />
+                  <Label htmlFor="mentor" className="cursor-pointer font-normal">
+                    Mentors
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="teacher"
+                    checked={announcementForm.audience.includes('teacher')}
+                    onCheckedChange={(checked) => handleAudienceChange('teacher', checked as boolean)}
+                    disabled={announcementForm.audience.includes('all')}
+                  />
+                  <Label htmlFor="teacher" className="cursor-pointer font-normal">
+                    Teachers
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="authority"
+                    checked={announcementForm.audience.includes('authority')}
+                    onCheckedChange={(checked) => handleAudienceChange('authority', checked as boolean)}
+                    disabled={announcementForm.audience.includes('all')}
+                  />
+                  <Label htmlFor="authority" className="cursor-pointer font-normal">
+                    Authorities
+                  </Label>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button 
+                onClick={handleCreateAnnouncement}
+                className="flex-1"
+              >
+                <Megaphone className="h-4 w-4 mr-2" />
+                Create Announcement
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => setAnnouncementDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
