@@ -4,35 +4,24 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Users, 
   Calendar, 
-  Target, 
   Trophy, 
   BookOpen, 
-  Clock,
-  TrendingUp,
   MessageCircle,
-  Plus,
   Award,
-  CheckCircle2,
-  Star,
-  Zap,
   Flame,
   Bell,
   Megaphone,
   Crown
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { GoalManager } from "@/components/goals/GoalManager";
-import { StudyHourTracker } from "@/components/study/StudyHourTracker";
-import { AchievementManager } from "@/components/achievements/AchievementManager";
 import { TaskManager } from "./TaskManager";
 import { CertificateManager } from "./CertificateManager";
-import { ProjectManager } from "./ProjectManager";
 
 interface Profile {
   id: string;
@@ -55,7 +44,6 @@ interface StudentDashboardProps {
 
 export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
   const [certificates, setCertificates] = useState([]);
-  const [projects, setProjects] = useState([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [userRank, setUserRank] = useState<number | null>(null);
@@ -140,13 +128,6 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
         .eq('user_id', user.id)
         .limit(3);
 
-      // Fetch projects
-      const { data: projectsData } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('user_id', user.id)
-        .limit(3);
-
       // Fetch announcements
       const { data: announcementsData } = await supabase
         .from('announcements')
@@ -176,7 +157,6 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
       }
 
       setCertificates(certsData || []);
-      setProjects(projectsData || []);
       setAnnouncements(announcementsData || []);
       setLeaderboard(leaderboardData || []);
       
@@ -258,7 +238,7 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <Card className="glass-effect hover-lift">
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center w-12 h-12 bg-orange-500/10 rounded-full mx-auto mb-2">
@@ -308,16 +288,6 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
             </div>
             <div className="text-2xl font-bold text-green-500">{certificates.length}</div>
             <div className="text-sm text-muted-foreground">Certificates</div>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-effect hover-lift">
-          <CardContent className="p-4 text-center">
-            <div className="flex items-center justify-center w-12 h-12 bg-blue-500/10 rounded-full mx-auto mb-2">
-              <BookOpen className="h-6 w-6 text-blue-500" />
-            </div>
-            <div className="text-2xl font-bold text-blue-500">{projects.length}</div>
-            <div className="text-sm text-muted-foreground">Projects</div>
           </CardContent>
         </Card>
       </div>
@@ -392,23 +362,6 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
             </CardContent>
           </Card>
 
-          {/* Recent Projects */}
-          <Card className="glass-effect">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-accent" />
-                Recent Projects
-              </CardTitle>
-              <CardDescription>Your active and completed projects</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ProjectManager 
-                projects={projects} 
-                onProjectsChange={setProjects} 
-                userId={user.id} 
-              />
-            </CardContent>
-          </Card>
         </div>
 
         {/* Right Column */}
@@ -517,23 +470,6 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
         </div>
       </div>
 
-      {/* Integrated Components */}
-      <Tabs defaultValue="goals" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="goals">Goals</TabsTrigger>
-          <TabsTrigger value="study">Study Tracker</TabsTrigger>
-          <TabsTrigger value="achievements">Achievements</TabsTrigger>
-        </TabsList>
-        <TabsContent value="goals" className="mt-6">
-          <GoalManager />
-        </TabsContent>
-        <TabsContent value="study" className="mt-6">
-          <StudyHourTracker />
-        </TabsContent>
-        <TabsContent value="achievements" className="mt-6">
-          <AchievementManager />
-        </TabsContent>
-      </Tabs>
 
       {/* Connections Dialog */}
       <Dialog open={connectionsDialogOpen} onOpenChange={setConnectionsDialogOpen}>
