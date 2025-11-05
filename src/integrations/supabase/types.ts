@@ -639,6 +639,48 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          action_id: string | null
+          action_type: string | null
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          read: boolean
+          title: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_id?: string | null
+          action_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          description: string
+          id?: string
+          read?: boolean
+          title: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_id?: string | null
+          action_type?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          read?: boolean
+          title?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       post_comments: {
         Row: {
           author_id: string
@@ -1198,6 +1240,18 @@ export type Database = {
       accept_connection_request: {
         Args: { request_id: string }
         Returns: undefined
+      }
+      create_notification: {
+        Args: {
+          p_action_id?: string
+          p_action_type?: string
+          p_created_by?: string
+          p_description: string
+          p_title: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: string
       }
       get_discovery_profiles: {
         Args: { search_term?: string }

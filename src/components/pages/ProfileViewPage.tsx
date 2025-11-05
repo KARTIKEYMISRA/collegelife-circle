@@ -6,19 +6,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowLeft, 
-  MessageCircle, 
-  UserPlus,
+  MessageCircle,
   MapPin,
   Calendar,
   GraduationCap,
   Briefcase,
   Award,
-  Star,
-  Check,
-  Clock
+  Star
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { ConnectionButton } from "@/components/connections/ConnectionButton";
 
 interface Profile {
   id: string;
@@ -75,6 +73,7 @@ export const ProfileViewPage = ({ profileId, onBack }: ProfileViewPageProps) => 
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [connectionStatus, setConnectionStatus] = useState<'none' | 'sent' | 'received' | 'connected'>('none');
+  const [requestId, setRequestId] = useState<string | undefined>();
 
   useEffect(() => {
     fetchCurrentUser();
@@ -124,6 +123,7 @@ export const ProfileViewPage = ({ profileId, onBack }: ProfileViewPageProps) => 
             .maybeSingle();
 
           if (connectionData) {
+            setRequestId(connectionData.id);
             if (connectionData.status === 'accepted') {
               setConnectionStatus('connected');
             } else if (connectionData.status === 'pending') {
@@ -181,32 +181,9 @@ export const ProfileViewPage = ({ profileId, onBack }: ProfileViewPageProps) => 
     if (data) setProjects(data);
   };
 
-  const sendConnectionRequest = async () => {
-    if (!currentUser || !profile) return;
-
-    try {
-      const { error } = await supabase
-        .from('connection_requests')
-        .insert({
-          sender_id: currentUser.id,
-          receiver_id: profile.user_id,
-          message: `Hi ${profile.full_name}, I'd like to connect with you!`
-        });
-
-      if (error) throw error;
-
-      setConnectionStatus('sent');
-      toast({
-        title: "Connection request sent",
-        description: "Your request has been sent successfully!",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send connection request",
-        variant: "destructive",
-      });
-    }
+  const handleConnectionUpdate = () => {
+    // Refresh profile data to get updated connection status
+    fetchProfile();
   };
 
   const startChat = async () => {
@@ -330,24 +307,13 @@ export const ProfileViewPage = ({ profileId, onBack }: ProfileViewPageProps) => 
                 </div>
               </div>
               <div className="flex gap-2">
-                {connectionStatus === 'none' && (
-                  <Button onClick={sendConnectionRequest} className="gap-2">
-                    <UserPlus className="h-4 w-4" />
-                    Connect
-                  </Button>
-                )}
-                {connectionStatus === 'sent' && (
-                  <Button disabled variant="outline" className="gap-2">
-                    <Clock className="h-4 w-4" />
-                    Request Sent
-                  </Button>
-                )}
-                {connectionStatus === 'connected' && (
-                  <Button variant="outline" className="gap-2">
-                    <Check className="h-4 w-4" />
-                    Connected
-                  </Button>
-                )}
+                <ConnectionButton
+                  targetUserId={profile.user_id}
+                  targetUserName={profile.full_name}
+                  status={connectionStatus}
+                  requestId={requestId}
+                  onUpdate={handleConnectionUpdate}
+                />
                 <Button onClick={startChat} variant="outline" className="gap-2">
                   <MessageCircle className="h-4 w-4" />
                   Message
