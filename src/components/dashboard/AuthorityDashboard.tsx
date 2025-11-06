@@ -3,25 +3,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   FileText, 
   Users, 
   CheckCircle2, 
-  Clock,
-  AlertTriangle,
   TrendingUp,
   Zap,
   Shield,
   Calendar,
-  BarChart3,
   X,
   Flame,
-  Megaphone
+  Megaphone,
+  GraduationCap
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { GoalManager } from "@/components/goals/GoalManager";
-import { AchievementManager } from "@/components/achievements/AchievementManager";
 import { CalendarTaskManager } from "./CalendarTaskManager";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -50,7 +45,6 @@ interface AuthorityDashboardProps {
 
 export const AuthorityDashboard = ({ user, profile }: AuthorityDashboardProps) => {
   const [approvalRequests, setApprovalRequests] = useState([]);
-  const [workAssignments, setWorkAssignments] = useState([]);
   const [institutionStats, setInstitutionStats] = useState({
     totalStudents: 0,
     totalMentors: 0,
@@ -145,13 +139,6 @@ export const AuthorityDashboard = ({ user, profile }: AuthorityDashboardProps) =
         .eq('status', 'pending')
         .limit(10);
 
-      // Fetch work assignments
-      const { data: workData } = await supabase
-        .from('work_assignments')
-        .select('*')
-        .or(`assigned_by.eq.${profile.id},assigned_to.eq.${profile.id}`)
-        .limit(10);
-
       // Fetch institution statistics
       const { data: studentsCount } = await supabase
         .from('profiles')
@@ -177,7 +164,6 @@ export const AuthorityDashboard = ({ user, profile }: AuthorityDashboardProps) =
         .eq('is_active', true);
 
       setApprovalRequests(requestsData || []);
-      setWorkAssignments(workData || []);
       setInstitutionStats({
         totalStudents: studentsCount?.length || 0,
         totalMentors: mentorsCount?.length || 0,
@@ -362,7 +348,7 @@ export const AuthorityDashboard = ({ user, profile }: AuthorityDashboardProps) =
         <Card className="glass-effect hover-lift">
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center w-12 h-12 bg-purple-500/10 rounded-full mx-auto mb-2">
-              <BarChart3 className="h-6 w-6 text-purple-500" />
+              <GraduationCap className="h-6 w-6 text-purple-500" />
             </div>
             <div className="text-2xl font-bold text-purple-500">{institutionStats.totalTeachers}</div>
             <div className="text-sm text-muted-foreground">Teachers</div>
@@ -382,9 +368,8 @@ export const AuthorityDashboard = ({ user, profile }: AuthorityDashboardProps) =
 
       {/* Main Dashboard Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Approval Requests */}
+        {/* Left Column - Approval Requests */}
+        <div className="lg:col-span-2">
           <Card className="glass-effect">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -441,49 +426,6 @@ export const AuthorityDashboard = ({ user, profile }: AuthorityDashboardProps) =
               </div>
             </CardContent>
           </Card>
-
-          {/* Work Management */}
-          <Card className="glass-effect">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5 text-accent" />
-                Work Management
-              </CardTitle>
-              <CardDescription>Assignments and administrative tasks</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {workAssignments.length > 0 ? (
-                  workAssignments.map((task: any) => (
-                    <div key={task.id} className="flex items-center justify-between p-3 border border-border/50 rounded-lg">
-                      <div>
-                        <p className="font-medium">{task.title}</p>
-                        <p className="text-sm text-muted-foreground">{task.description}</p>
-                        {task.due_date && (
-                          <p className="text-xs text-muted-foreground">
-                            Due: {new Date(task.due_date).toLocaleDateString()}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={getPriorityColor(task.priority)}>
-                          {task.priority}
-                        </Badge>
-                        <Badge variant={task.status === 'completed' ? 'default' : 'secondary'}>
-                          {task.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8">
-                    <BarChart3 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No work assignments</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Right Column */}
@@ -506,16 +448,8 @@ export const AuthorityDashboard = ({ user, profile }: AuthorityDashboardProps) =
                 Create Announcement
               </Button>
               <Button variant="outline" className="w-full justify-start">
-                <Calendar className="h-4 w-4 mr-2" />
-                Schedule Event
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
                 <Users className="h-4 w-4 mr-2" />
                 Manage Users
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <BarChart3 className="h-4 w-4 mr-2" />
-                View Reports
               </Button>
             </CardContent>
           </Card>
@@ -563,23 +497,8 @@ export const AuthorityDashboard = ({ user, profile }: AuthorityDashboardProps) =
         </div>
       </div>
 
-      {/* Integrated Components */}
-      <Tabs defaultValue="calendar" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="calendar">Task Calendar</TabsTrigger>
-          <TabsTrigger value="goals">Goals</TabsTrigger>
-          <TabsTrigger value="achievements">Achievements</TabsTrigger>
-        </TabsList>
-        <TabsContent value="calendar" className="mt-6">
-          <CalendarTaskManager userId={user.id} />
-        </TabsContent>
-        <TabsContent value="goals" className="mt-6">
-          <GoalManager />
-        </TabsContent>
-        <TabsContent value="achievements" className="mt-6">
-          <AchievementManager />
-        </TabsContent>
-      </Tabs>
+      {/* Task Calendar */}
+      <CalendarTaskManager userId={user.id} />
 
       {/* Create Announcement Dialog */}
       <Dialog open={announcementDialogOpen} onOpenChange={setAnnouncementDialogOpen}>

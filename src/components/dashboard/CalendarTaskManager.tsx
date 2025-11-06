@@ -181,26 +181,37 @@ export const CalendarTaskManager = ({ userId }: CalendarTaskManagerProps) => {
   const selectedDateTasks = selectedDate ? getTasksForDate(selectedDate) : [];
 
   return (
-    <div className="space-y-6">
-      <Card>
+    <>
+      <Card className="glass-effect">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CalendarIcon className="h-5 w-5 text-primary" />
-            Task Calendar
-          </CardTitle>
-          <CardDescription>
-            Schedule and manage your tasks with calendar view
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <CalendarIcon className="h-4 w-4 text-primary" />
+                Task Calendar
+              </CardTitle>
+              <CardDescription className="text-sm">
+                Schedule and manage tasks
+              </CardDescription>
+            </div>
+            <Button 
+              onClick={openCreateDialog}
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Task
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Calendar */}
-            <div className="flex flex-col items-center">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            {/* Compact Calendar */}
+            <div className="md:col-span-2">
               <Calendar
                 mode="single"
                 selected={selectedDate}
                 onSelect={handleDateSelect}
-                className={cn("rounded-md border pointer-events-auto")}
+                className={cn("rounded-md border pointer-events-auto p-2")}
                 modifiers={{
                   hasTask: (date) => getTasksForDate(date).length > 0
                 }}
@@ -212,73 +223,68 @@ export const CalendarTaskManager = ({ userId }: CalendarTaskManagerProps) => {
                   }
                 }}
               />
-              <Button 
-                onClick={openCreateDialog}
-                className="mt-4 w-full max-w-xs"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Schedule Task
-              </Button>
             </div>
 
-            {/* Tasks for Selected Date */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold">
-                  {selectedDate ? format(selectedDate, 'MMMM dd, yyyy') : 'Select a date'}
+            {/* Compact Tasks List */}
+            <div className="md:col-span-3">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold">
+                  {selectedDate ? format(selectedDate, 'MMM dd, yyyy') : 'Select date'}
                 </h3>
                 {selectedDateTasks.length > 0 && (
-                  <Badge variant="secondary">
+                  <Badge variant="secondary" className="text-xs">
                     {selectedDateTasks.length} task{selectedDateTasks.length !== 1 ? 's' : ''}
                   </Badge>
                 )}
               </div>
 
-              <div className="space-y-3 max-h-[400px] overflow-y-auto">
+              <div className="space-y-2 max-h-[280px] overflow-y-auto">
                 {selectedDateTasks.length > 0 ? (
                   selectedDateTasks.map((task) => (
-                    <Card key={task.id} className="p-4 hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <h4 className="font-medium mb-1">{task.title}</h4>
+                    <div key={task.id} className="p-3 border border-border/50 rounded-lg hover:bg-accent/5 transition-colors">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-sm truncate">{task.title}</h4>
                           {task.description && (
-                            <p className="text-sm text-muted-foreground mb-2">
+                            <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
                               {task.description}
                             </p>
                           )}
-                          <div className="flex gap-2">
-                            <Badge variant={getPriorityColor(task.priority)}>
+                          <div className="flex gap-1 mt-2">
+                            <Badge variant={getPriorityColor(task.priority)} className="text-xs px-1.5 py-0">
                               {task.priority}
                             </Badge>
-                            <Badge variant={getStatusColor(task.status)}>
+                            <Badge variant={getStatusColor(task.status)} className="text-xs px-1.5 py-0">
                               {task.status}
                             </Badge>
                           </div>
                         </div>
-                        <div className="flex gap-1 ml-2">
+                        <div className="flex gap-0.5">
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => openEditDialog(task)}
+                            className="h-7 w-7 p-0"
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-3 w-3" />
                           </Button>
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => handleDelete(task.id)}
+                            className="h-7 w-7 p-0"
                           >
-                            <Trash2 className="h-4 w-4 text-destructive" />
+                            <Trash2 className="h-3 w-3 text-destructive" />
                           </Button>
                         </div>
                       </div>
-                    </Card>
+                    </div>
                   ))
                 ) : (
-                  <div className="text-center py-8">
-                    <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">
-                      No tasks scheduled for this date
+                  <div className="text-center py-6">
+                    <Clock className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      No tasks for this date
                     </p>
                   </div>
                 )}
@@ -290,72 +296,77 @@ export const CalendarTaskManager = ({ userId }: CalendarTaskManagerProps) => {
 
       {/* Create/Edit Task Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>
-              {editingTask ? 'Edit Task' : 'Schedule New Task'}
+            <DialogTitle className="text-lg">
+              {editingTask ? 'Edit Task' : 'New Task'}
             </DialogTitle>
-            <DialogDescription>
-              {editingTask ? 'Update task details' : 'Create a new task on your calendar'}
+            <DialogDescription className="text-sm">
+              {editingTask ? 'Update task details' : 'Create a task on your calendar'}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div>
-              <Label htmlFor="task-title">Title *</Label>
+              <Label htmlFor="task-title" className="text-sm">Title *</Label>
               <Input
                 id="task-title"
                 placeholder="Task title"
                 value={formData.title}
                 onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                className="text-sm"
               />
             </div>
 
             <div>
-              <Label htmlFor="task-description">Description</Label>
+              <Label htmlFor="task-description" className="text-sm">Description</Label>
               <Textarea
                 id="task-description"
                 placeholder="Task description..."
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                rows={3}
+                rows={2}
+                className="text-sm"
               />
             </div>
 
-            <div>
-              <Label htmlFor="task-date">Due Date *</Label>
-              <Input
-                id="task-date"
-                type="date"
-                value={formData.due_date}
-                onChange={(e) => setFormData(prev => ({ ...prev, due_date: e.target.value }))}
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="task-date" className="text-sm">Due Date *</Label>
+                <Input
+                  id="task-date"
+                  type="date"
+                  value={formData.due_date}
+                  onChange={(e) => setFormData(prev => ({ ...prev, due_date: e.target.value }))}
+                  className="text-sm"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="task-priority" className="text-sm">Priority</Label>
+                <Select
+                  value={formData.priority}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value }))}
+                >
+                  <SelectTrigger className="text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div>
-              <Label htmlFor="task-priority">Priority</Label>
-              <Select
-                value={formData.priority}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="task-status">Status</Label>
+              <Label htmlFor="task-status" className="text-sm">Status</Label>
               <Select
                 value={formData.status}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -366,13 +377,14 @@ export const CalendarTaskManager = ({ userId }: CalendarTaskManagerProps) => {
               </Select>
             </div>
 
-            <div className="flex gap-3 pt-4">
-              <Button onClick={handleSubmit} className="flex-1">
-                {editingTask ? 'Update Task' : 'Create Task'}
+            <div className="flex gap-2 pt-3">
+              <Button onClick={handleSubmit} className="flex-1" size="sm">
+                {editingTask ? 'Update' : 'Create'}
               </Button>
               <Button 
                 variant="outline"
                 onClick={() => setDialogOpen(false)}
+                size="sm"
               >
                 Cancel
               </Button>
@@ -380,6 +392,6 @@ export const CalendarTaskManager = ({ userId }: CalendarTaskManagerProps) => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 };
