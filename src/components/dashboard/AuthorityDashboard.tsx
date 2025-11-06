@@ -22,6 +22,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { GoalManager } from "@/components/goals/GoalManager";
 import { AchievementManager } from "@/components/achievements/AchievementManager";
+import { CalendarTaskManager } from "./CalendarTaskManager";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -563,11 +564,15 @@ export const AuthorityDashboard = ({ user, profile }: AuthorityDashboardProps) =
       </div>
 
       {/* Integrated Components */}
-      <Tabs defaultValue="goals" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs defaultValue="calendar" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="calendar">Task Calendar</TabsTrigger>
           <TabsTrigger value="goals">Goals</TabsTrigger>
           <TabsTrigger value="achievements">Achievements</TabsTrigger>
         </TabsList>
+        <TabsContent value="calendar" className="mt-6">
+          <CalendarTaskManager userId={user.id} />
+        </TabsContent>
         <TabsContent value="goals" className="mt-6">
           <GoalManager />
         </TabsContent>
