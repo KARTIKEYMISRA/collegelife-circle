@@ -14,10 +14,12 @@ import {
   X,
   Flame,
   Megaphone,
-  GraduationCap
+  GraduationCap,
+  Lock
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { CalendarTaskManager } from "./CalendarTaskManager";
+import { SecureAdminPanel } from "./SecureAdminPanel";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -499,6 +501,22 @@ export const AuthorityDashboard = ({ user, profile }: AuthorityDashboardProps) =
 
       {/* Task Calendar */}
       <CalendarTaskManager userId={user.id} />
+
+      {/* Secure Admin Panel */}
+      <Card className="glass-effect">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Lock className="h-5 w-5 text-primary" />
+            Secure Admin Panel
+          </CardTitle>
+          <CardDescription>
+            Password-protected user management with audit logging
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SecureAdminPanel user={user} profile={profile} />
+        </CardContent>
+      </Card>
 
       {/* Create Announcement Dialog */}
       <Dialog open={announcementDialogOpen} onOpenChange={setAnnouncementDialogOpen}>
