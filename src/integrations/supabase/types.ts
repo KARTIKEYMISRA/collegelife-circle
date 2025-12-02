@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_panel_settings: {
+        Row: {
+          id: string
+          setting_key: string
+          setting_value: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          setting_key: string
+          setting_value: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          setting_key?: string
+          setting_value?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           announcement_type: string
@@ -111,6 +135,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      authority_audit_log: {
+        Row: {
+          action_type: string
+          authority_user_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          authority_user_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          authority_user_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: []
       }
       bookings: {
         Row: {
@@ -784,6 +838,7 @@ export type Database = {
       profiles: {
         Row: {
           bio: string | null
+          branch: string | null
           connections_count: number | null
           Course: string | null
           cover_picture_url: string | null
@@ -800,6 +855,7 @@ export type Database = {
           phone_number: string | null
           profile_picture_url: string | null
           role: Database["public"]["Enums"]["user_role"] | null
+          section: string | null
           student_id: string | null
           updated_at: string
           user_id: string
@@ -807,6 +863,7 @@ export type Database = {
         }
         Insert: {
           bio?: string | null
+          branch?: string | null
           connections_count?: number | null
           Course?: string | null
           cover_picture_url?: string | null
@@ -823,6 +880,7 @@ export type Database = {
           phone_number?: string | null
           profile_picture_url?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          section?: string | null
           student_id?: string | null
           updated_at?: string
           user_id: string
@@ -830,6 +888,7 @@ export type Database = {
         }
         Update: {
           bio?: string | null
+          branch?: string | null
           connections_count?: number | null
           Course?: string | null
           cover_picture_url?: string | null
@@ -846,6 +905,7 @@ export type Database = {
           phone_number?: string | null
           profile_picture_url?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
+          section?: string | null
           student_id?: string | null
           updated_at?: string
           user_id?: string
@@ -1316,6 +1376,14 @@ export type Database = {
           check_user_id: string
         }
         Returns: boolean
+      }
+      log_authority_action: {
+        Args: {
+          p_action_type: string
+          p_details?: Json
+          p_target_user_id?: string
+        }
+        Returns: string
       }
     }
     Enums: {
