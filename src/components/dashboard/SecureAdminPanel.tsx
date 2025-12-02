@@ -45,6 +45,17 @@ interface UserProfile {
   section: string | null;
   branch: string | null;
   institution_roll_number: string | null;
+  student_id: string | null;
+  phone_number: string | null;
+  bio: string | null;
+  profile_picture_url: string | null;
+  cover_picture_url: string | null;
+  links: string[] | null;
+  daily_streak: number | null;
+  connections_count: number | null;
+  last_activity_date: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 interface AuditLog {
@@ -73,6 +84,7 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
   
   // Edit user dialog
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [editForm, setEditForm] = useState({
     full_name: "",
@@ -81,7 +93,10 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
     Course: "",
     section: "",
     branch: "",
-    role: ""
+    role: "",
+    phone_number: "",
+    bio: "",
+    student_id: ""
   });
 
   // Unique values for filters
@@ -143,7 +158,7 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, user_id, full_name, email, role, department, year_of_study, Course, section, branch, institution_roll_number')
+        .select('*')
         .eq('institution_id', profile.institution_id)
         .order('full_name');
 
@@ -220,6 +235,11 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
     setFilteredUsers(filtered);
   }, [searchTerm, filterYear, filterCourse, filterSection, filterBranch, filterRole, users]);
 
+  const handleViewUser = (userProfile: UserProfile) => {
+    setSelectedUser(userProfile);
+    setViewDialogOpen(true);
+  };
+
   const handleEditUser = (userProfile: UserProfile) => {
     setSelectedUser(userProfile);
     setEditForm({
@@ -229,7 +249,10 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
       Course: userProfile.Course || "",
       section: userProfile.section || "",
       branch: userProfile.branch || "",
-      role: userProfile.role || ""
+      role: userProfile.role || "",
+      phone_number: userProfile.phone_number || "",
+      bio: userProfile.bio || "",
+      student_id: userProfile.student_id || ""
     });
     setEditDialogOpen(true);
   };
@@ -243,7 +266,9 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
         year_of_study: editForm.year_of_study ? parseInt(editForm.year_of_study) : null,
         Course: editForm.Course || null,
         section: editForm.section || null,
-        branch: editForm.branch || null
+        branch: editForm.branch || null,
+        phone_number: editForm.phone_number || null,
+        bio: editForm.bio || null
       };
 
       const { error } = await supabase
@@ -299,13 +324,21 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
       const exportData = filteredUsers.map(u => ({
         'Full Name': u.full_name,
         'Email': u.email,
+        'Phone Number': u.phone_number,
+        'Student ID': u.student_id,
         'Roll Number': u.institution_roll_number,
         'Role': u.role,
         'Department': u.department,
         'Year': u.year_of_study,
         'Course': u.Course,
         'Section': u.section,
-        'Branch': u.branch
+        'Branch': u.branch,
+        'Bio': u.bio,
+        'Daily Streak': u.daily_streak,
+        'Connections': u.connections_count,
+        'Last Activity': u.last_activity_date,
+        'Created At': u.created_at,
+        'Updated At': u.updated_at
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
@@ -561,13 +594,13 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
+                    <TableHead>Name/Email</TableHead>
+                    <TableHead>Phone</TableHead>
                     <TableHead>Roll No.</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Year</TableHead>
-                    <TableHead>Course</TableHead>
-                    <TableHead>Section</TableHead>
                     <TableHead>Branch</TableHead>
+                    <TableHead>Section</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -593,6 +626,7 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
                             <p className="text-xs text-muted-foreground">{u.email}</p>
                           </div>
                         </TableCell>
+                        <TableCell className="text-sm">{u.phone_number || '-'}</TableCell>
                         <TableCell className="text-sm">{u.institution_roll_number || '-'}</TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-xs capitalize">
@@ -600,16 +634,25 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm">{u.year_of_study || '-'}</TableCell>
-                        <TableCell className="text-sm">{u.Course || '-'}</TableCell>
-                        <TableCell className="text-sm">{u.section || '-'}</TableCell>
                         <TableCell className="text-sm">{u.branch || '-'}</TableCell>
+                        <TableCell className="text-sm">{u.section || '-'}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             <Button
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8"
+                              onClick={() => handleViewUser(u)}
+                              title="View Details"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
                               onClick={() => handleEditUser(u)}
+                              title="Edit"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -618,6 +661,7 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
                               size="icon"
                               className="h-8 w-8 text-destructive hover:text-destructive"
                               onClick={() => handleDeleteUser(u)}
+                              title="Delete"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -675,58 +719,244 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
 
       {/* Edit User Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>
               Update user details for {selectedUser?.full_name}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Department</Label>
-                <Input
-                  value={editForm.department}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, department: e.target.value }))}
-                />
+          <ScrollArea className="max-h-[60vh]">
+            <div className="space-y-4 pr-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Department</Label>
+                  <Input
+                    value={editForm.department}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, department: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Year of Study</Label>
+                  <Input
+                    type="number"
+                    value={editForm.year_of_study}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, year_of_study: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Course</Label>
+                  <Input
+                    value={editForm.Course}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, Course: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Section</Label>
+                  <Input
+                    value={editForm.section}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, section: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Branch</Label>
+                  <Input
+                    value={editForm.branch}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, branch: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Phone Number</Label>
+                  <Input
+                    value={editForm.phone_number}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, phone_number: e.target.value }))}
+                  />
+                </div>
               </div>
               <div className="space-y-2">
-                <Label>Year of Study</Label>
+                <Label>Bio</Label>
                 <Input
-                  type="number"
-                  value={editForm.year_of_study}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, year_of_study: e.target.value }))}
+                  value={editForm.bio}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, bio: e.target.value }))}
+                  placeholder="Short bio"
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Course</Label>
-                <Input
-                  value={editForm.Course}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, Course: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Section</Label>
-                <Input
-                  value={editForm.section}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, section: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Branch</Label>
-              <Input
-                value={editForm.branch}
-                onChange={(e) => setEditForm(prev => ({ ...prev, branch: e.target.value }))}
-              />
-            </div>
-          </div>
+          </ScrollArea>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleSaveUser}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View User Details Dialog */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>User Details</DialogTitle>
+            <DialogDescription>
+              Complete profile information for {selectedUser?.full_name}
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[70vh]">
+            {selectedUser && (
+              <div className="space-y-6 pr-4">
+                {/* Profile Picture & Basic Info */}
+                <div className="flex items-start gap-4">
+                  {selectedUser.profile_picture_url ? (
+                    <img 
+                      src={selectedUser.profile_picture_url} 
+                      alt={selectedUser.full_name}
+                      className="w-20 h-20 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
+                      <Users className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold">{selectedUser.full_name}</h3>
+                    <Badge variant="outline" className="capitalize mt-1">{selectedUser.role}</Badge>
+                    <p className="text-sm text-muted-foreground mt-2">{selectedUser.bio || 'No bio provided'}</p>
+                  </div>
+                </div>
+
+                {/* Contact Information */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Contact Information</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Email</p>
+                      <p className="font-medium">{selectedUser.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Phone Number</p>
+                      <p className="font-medium">{selectedUser.phone_number || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Academic Information */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Academic Information</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Student ID</p>
+                      <p className="font-medium">{selectedUser.student_id || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Roll Number</p>
+                      <p className="font-medium">{selectedUser.institution_roll_number || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Department</p>
+                      <p className="font-medium">{selectedUser.department || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Year of Study</p>
+                      <p className="font-medium">{selectedUser.year_of_study || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Course</p>
+                      <p className="font-medium">{selectedUser.Course || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Branch</p>
+                      <p className="font-medium">{selectedUser.branch || '-'}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Section</p>
+                      <p className="font-medium">{selectedUser.section || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Activity & Stats */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Activity & Stats</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Daily Streak</p>
+                      <p className="font-medium">{selectedUser.daily_streak || 0} days</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Connections</p>
+                      <p className="font-medium">{selectedUser.connections_count || 0}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Last Activity</p>
+                      <p className="font-medium">{selectedUser.last_activity_date ? formatDate(selectedUser.last_activity_date) : 'Never'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* System Information */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">System Information</h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">User ID</p>
+                      <p className="font-medium font-mono text-xs">{selectedUser.user_id}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Profile ID</p>
+                      <p className="font-medium font-mono text-xs">{selectedUser.id}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Created At</p>
+                      <p className="font-medium">{formatDate(selectedUser.created_at)}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Updated At</p>
+                      <p className="font-medium">{formatDate(selectedUser.updated_at)}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Links */}
+                {selectedUser.links && selectedUser.links.length > 0 && (
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Links</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedUser.links.map((link, index) => (
+                        <a 
+                          key={index} 
+                          href={link} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary hover:underline"
+                        >
+                          {link}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Password Note */}
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <p className="text-sm text-muted-foreground">
+                    <Shield className="h-4 w-4 inline mr-2" />
+                    <strong>Note:</strong> User passwords are securely managed by Supabase Auth and cannot be viewed or exported for security reasons.
+                  </p>
+                </div>
+              </div>
+            )}
+          </ScrollArea>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewDialogOpen(false)}>Close</Button>
+            <Button onClick={() => {
+              setViewDialogOpen(false);
+              if (selectedUser) handleEditUser(selectedUser);
+            }}>
+              <Edit className="h-4 w-4 mr-2" />
+              Edit User
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
