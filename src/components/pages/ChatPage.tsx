@@ -111,7 +111,14 @@ export const ChatPage = () => {
 
   const fetchCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    setCurrentUser(user);
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('institution_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      setCurrentUser({ ...user, institution_id: profile?.institution_id });
+    }
   };
 
   const fetchConversations = async () => {
@@ -246,7 +253,8 @@ export const ChatPage = () => {
         .from('conversations')
         .insert({
           participant1_id: currentUser.id,
-          participant2_id: otherUserId
+          participant2_id: otherUserId,
+          institution_id: currentUser.institution_id
         })
         .select()
         .single();
