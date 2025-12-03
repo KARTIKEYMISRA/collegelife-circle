@@ -63,6 +63,7 @@ interface Profile {
   profile_picture_url?: string;
   role: string;
   department: string;
+  institution_id?: string;
 }
 
 export const FeedPage = () => {
@@ -255,7 +256,8 @@ export const FeedPage = () => {
           author_id: currentUser.id,
           content: newPostContent.trim(),
           audience: selectedAudience,
-          image_url: imageUrl
+          image_url: imageUrl,
+          institution_id: currentProfile?.institution_id
         })
         .select()
         .single();

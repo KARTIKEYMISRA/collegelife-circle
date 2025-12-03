@@ -70,7 +70,14 @@ export const EnhancedResourcesPage = () => {
 
   const fetchCurrentUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    setCurrentUser(user);
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('institution_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      setCurrentUser({ ...user, institution_id: profile?.institution_id });
+    }
   };
 
   const fetchResources = async () => {
@@ -143,7 +150,8 @@ export const EnhancedResourcesPage = () => {
           resource_type: uploadForm.resource_type,
           file_url: publicUrl,
           file_size: uploadForm.file.size,
-          tags: uploadForm.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0)
+          tags: uploadForm.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0),
+          institution_id: currentUser.institution_id
         });
 
       if (insertError) throw insertError;

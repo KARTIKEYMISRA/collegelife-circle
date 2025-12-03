@@ -229,6 +229,7 @@ export type Database = {
           event_date: string
           id: string
           image_url: string | null
+          institution_id: string | null
           is_active: boolean | null
           location: string
           max_participants: number | null
@@ -244,6 +245,7 @@ export type Database = {
           event_date: string
           id?: string
           image_url?: string | null
+          institution_id?: string | null
           is_active?: boolean | null
           location: string
           max_participants?: number | null
@@ -259,13 +261,22 @@ export type Database = {
           event_date?: string
           id?: string
           image_url?: string | null
+          institution_id?: string | null
           is_active?: boolean | null
           location?: string
           max_participants?: number | null
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "campus_events_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       certificates: {
         Row: {
@@ -381,6 +392,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          institution_id: string | null
           last_message_at: string | null
           participant1_id: string
           participant2_id: string
@@ -389,6 +401,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          institution_id?: string | null
           last_message_at?: string | null
           participant1_id: string
           participant2_id: string
@@ -397,12 +410,21 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          institution_id?: string | null
           last_message_at?: string | null
           participant1_id?: string
           participant2_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "conversations_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       education_details: {
         Row: {
@@ -808,6 +830,7 @@ export type Database = {
           created_at: string
           id: string
           image_url: string | null
+          institution_id: string | null
           likes_count: number | null
           updated_at: string
         }
@@ -819,6 +842,7 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          institution_id?: string | null
           likes_count?: number | null
           updated_at?: string
         }
@@ -830,10 +854,19 @@ export type Database = {
           created_at?: string
           id?: string
           image_url?: string | null
+          institution_id?: string | null
           likes_count?: number | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posts_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -977,6 +1010,7 @@ export type Database = {
           file_size: number | null
           file_url: string
           id: string
+          institution_id: string | null
           rating: number | null
           resource_type: string
           subject: string
@@ -992,6 +1026,7 @@ export type Database = {
           file_size?: number | null
           file_url: string
           id?: string
+          institution_id?: string | null
           rating?: number | null
           resource_type?: string
           subject: string
@@ -1007,6 +1042,7 @@ export type Database = {
           file_size?: number | null
           file_url?: string
           id?: string
+          institution_id?: string | null
           rating?: number | null
           resource_type?: string
           subject?: string
@@ -1015,7 +1051,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "resources_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reviews: {
         Row: {
@@ -1366,6 +1410,7 @@ export type Database = {
           year_of_study: number
         }[]
       }
+      get_user_institution_id: { Args: never; Returns: string }
       has_group_role: {
         Args: { gid: string; required_role?: string; uid: string }
         Returns: boolean
