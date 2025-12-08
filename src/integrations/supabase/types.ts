@@ -1396,6 +1396,10 @@ export type Database = {
           year_of_study: number
         }[]
       }
+      get_profile_institution_id: {
+        Args: { target_user_id: string }
+        Returns: string
+      }
       get_public_profile_info: {
         Args: { profile_user_id: string }
         Returns: {
