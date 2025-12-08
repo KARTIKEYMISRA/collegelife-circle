@@ -99,6 +99,23 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
     student_id: ""
   });
 
+  // Add user dialog
+  const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
+  const [addUserLoading, setAddUserLoading] = useState(false);
+  const [addUserForm, setAddUserForm] = useState({
+    email: "",
+    password: "",
+    full_name: "",
+    role: "student",
+    department: "",
+    year_of_study: "",
+    institution_roll_number: "",
+    phone_number: "",
+    Course: "",
+    section: "",
+    branch: ""
+  });
+
   // Unique values for filters
   const [uniqueYears, setUniqueYears] = useState<number[]>([]);
   const [uniqueCourses, setUniqueCourses] = useState<string[]>([]);
@@ -289,6 +306,70 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
     } catch (error) {
       console.error('Error updating user:', error);
       toast.error("Failed to update user");
+    }
+  };
+
+  const handleAddUser = async () => {
+    if (!addUserForm.email || !addUserForm.password || !addUserForm.full_name || !addUserForm.department) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    if (addUserForm.password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    setAddUserLoading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      const response = await supabase.functions.invoke('create-user', {
+        body: {
+          email: addUserForm.email,
+          password: addUserForm.password,
+          full_name: addUserForm.full_name,
+          role: addUserForm.role,
+          department: addUserForm.department,
+          year_of_study: addUserForm.year_of_study || null,
+          institution_roll_number: addUserForm.institution_roll_number || null,
+          phone_number: addUserForm.phone_number || null,
+          Course: addUserForm.Course || null,
+          section: addUserForm.section || null,
+          branch: addUserForm.branch || null
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to create user');
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
+
+      toast.success(`User ${addUserForm.full_name} created successfully`);
+      setAddUserDialogOpen(false);
+      setAddUserForm({
+        email: "",
+        password: "",
+        full_name: "",
+        role: "student",
+        department: "",
+        year_of_study: "",
+        institution_roll_number: "",
+        phone_number: "",
+        Course: "",
+        section: "",
+        branch: ""
+      });
+      fetchUsers();
+      fetchAuditLogs();
+    } catch (error: any) {
+      console.error('Error creating user:', error);
+      toast.error(error.message || "Failed to create user");
+    } finally {
+      setAddUserLoading(false);
     }
   };
 
@@ -566,6 +647,10 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
               Showing {filteredUsers.length} of {users.length} users
             </p>
             <div className="flex gap-2">
+              <Button size="sm" onClick={() => setAddUserDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add User
+              </Button>
               <Button variant="outline" size="sm" onClick={handleExportExcel}>
                 <Download className="h-4 w-4 mr-2" />
                 Export
@@ -956,6 +1041,140 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
             }}>
               <Edit className="h-4 w-4 mr-2" />
               Edit User
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add User Dialog */}
+      <Dialog open={addUserDialogOpen} onOpenChange={setAddUserDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add New User</DialogTitle>
+            <DialogDescription>
+              Create a new user account in your institution
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="max-h-[60vh]">
+            <div className="space-y-4 pr-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 space-y-2">
+                  <Label>Full Name *</Label>
+                  <Input
+                    value={addUserForm.full_name}
+                    onChange={(e) => setAddUserForm(prev => ({ ...prev, full_name: e.target.value }))}
+                    placeholder="Enter full name"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Email *</Label>
+                  <Input
+                    type="email"
+                    value={addUserForm.email}
+                    onChange={(e) => setAddUserForm(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="user@email.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Password *</Label>
+                  <Input
+                    type="password"
+                    value={addUserForm.password}
+                    onChange={(e) => setAddUserForm(prev => ({ ...prev, password: e.target.value }))}
+                    placeholder="Min 6 characters"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Role *</Label>
+                  <Select 
+                    value={addUserForm.role} 
+                    onValueChange={(value) => setAddUserForm(prev => ({ ...prev, role: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="student">Student</SelectItem>
+                      <SelectItem value="mentor">Mentor</SelectItem>
+                      <SelectItem value="teacher">Teacher</SelectItem>
+                      <SelectItem value="authority">Authority</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Department *</Label>
+                  <Input
+                    value={addUserForm.department}
+                    onChange={(e) => setAddUserForm(prev => ({ ...prev, department: e.target.value }))}
+                    placeholder="e.g. Computer Science"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Year of Study</Label>
+                  <Input
+                    type="number"
+                    value={addUserForm.year_of_study}
+                    onChange={(e) => setAddUserForm(prev => ({ ...prev, year_of_study: e.target.value }))}
+                    placeholder="1, 2, 3..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Roll Number</Label>
+                  <Input
+                    value={addUserForm.institution_roll_number}
+                    onChange={(e) => setAddUserForm(prev => ({ ...prev, institution_roll_number: e.target.value }))}
+                    placeholder="Institution roll number"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Phone Number</Label>
+                  <Input
+                    value={addUserForm.phone_number}
+                    onChange={(e) => setAddUserForm(prev => ({ ...prev, phone_number: e.target.value }))}
+                    placeholder="+1234567890"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Course</Label>
+                  <Input
+                    value={addUserForm.Course}
+                    onChange={(e) => setAddUserForm(prev => ({ ...prev, Course: e.target.value }))}
+                    placeholder="e.g. B.Tech"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Section</Label>
+                  <Input
+                    value={addUserForm.section}
+                    onChange={(e) => setAddUserForm(prev => ({ ...prev, section: e.target.value }))}
+                    placeholder="e.g. A"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Branch</Label>
+                  <Input
+                    value={addUserForm.branch}
+                    onChange={(e) => setAddUserForm(prev => ({ ...prev, branch: e.target.value }))}
+                    placeholder="e.g. CSE"
+                  />
+                </div>
+              </div>
+            </div>
+          </ScrollArea>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddUserDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddUser} disabled={addUserLoading}>
+              {addUserLoading ? "Creating..." : "Create User"}
             </Button>
           </DialogFooter>
         </DialogContent>
