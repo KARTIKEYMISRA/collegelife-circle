@@ -1,10 +1,23 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Generate a secure random password
+function generatePassword(length: number = 12): string {
+  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+  const array = new Uint8Array(length);
+  crypto.getRandomValues(array);
+  let password = '';
+  for (let i = 0; i < length; i++) {
+    password += charset[array[i] % charset.length];
+  }
+  return password;
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -15,6 +28,17 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    
+    if (!resendApiKey) {
+      console.error('RESEND_API_KEY is not configured');
+      return new Response(
+        JSON.stringify({ error: 'Email service not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const resend = new Resend(resendApiKey);
     
     // Create admin client with service role key
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
@@ -70,10 +94,9 @@ serve(async (req) => {
       );
     }
 
-    // Parse request body
+    // Parse request body - admin-controlled fields only (no password)
     const { 
       email, 
-      password, 
       full_name, 
       role, 
       department, 
@@ -86,9 +109,9 @@ serve(async (req) => {
     } = await req.json();
 
     // Validate required fields
-    if (!email || !password || !full_name || !role || !department) {
+    if (!email || !full_name || !role || !department) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: email, password, full_name, role, department' }),
+        JSON.stringify({ error: 'Missing required fields: email, full_name, role, department' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -102,14 +125,6 @@ serve(async (req) => {
       );
     }
 
-    // Validate password strength
-    if (password.length < 6) {
-      return new Response(
-        JSON.stringify({ error: 'Password must be at least 6 characters' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     // Validate role
     const validRoles = ['student', 'mentor', 'teacher', 'authority'];
     if (!validRoles.includes(role)) {
@@ -119,12 +134,15 @@ serve(async (req) => {
       );
     }
 
+    // Auto-generate a secure password
+    const generatedPassword = generatePassword(12);
+
     console.log('Creating user with email:', email, 'role:', role);
 
     // Create user in Supabase Auth with metadata
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
-      password,
+      password: generatedPassword,
       email_confirm: true, // Auto-confirm email
       user_metadata: {
         full_name,
@@ -164,6 +182,47 @@ serve(async (req) => {
       }
     }
 
+    // Send email with login credentials
+    try {
+      const { error: emailError } = await resend.emails.send({
+        from: 'Campus Connect <onboarding@resend.dev>',
+        to: [email],
+        subject: 'Welcome to Campus Connect - Your Login Credentials',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #333; text-align: center;">Welcome to Campus Connect!</h1>
+            <p style="color: #666; font-size: 16px;">Hello ${full_name},</p>
+            <p style="color: #666; font-size: 16px;">Your account has been created by the administrator. Here are your login credentials:</p>
+            
+            <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 10px 0;"><strong>Email:</strong> ${email}</p>
+              <p style="margin: 10px 0;"><strong>Password:</strong> ${generatedPassword}</p>
+              <p style="margin: 10px 0;"><strong>Role:</strong> ${role}</p>
+              <p style="margin: 10px 0;"><strong>Department:</strong> ${department}</p>
+            </div>
+            
+            <p style="color: #e74c3c; font-size: 14px;"><strong>Important:</strong> Please change your password after your first login for security purposes.</p>
+            
+            <p style="color: #666; font-size: 16px;">If you have any questions, please contact your institution administrator.</p>
+            
+            <p style="color: #999; font-size: 14px; margin-top: 30px; text-align: center;">
+              This is an automated message. Please do not reply to this email.
+            </p>
+          </div>
+        `,
+      });
+
+      if (emailError) {
+        console.error('Email sending error:', emailError);
+        // Don't fail the request, user was created successfully
+      } else {
+        console.log('Welcome email sent successfully to:', email);
+      }
+    } catch (emailErr) {
+      console.error('Email service error:', emailErr);
+      // Don't fail the request, user was created successfully
+    }
+
     // Log the action
     await supabaseAdmin.rpc('log_authority_action', {
       p_action_type: 'create_user',
@@ -182,7 +241,8 @@ serve(async (req) => {
         user: { 
           id: newUser.user?.id, 
           email: newUser.user?.email 
-        } 
+        },
+        message: 'User created successfully. Login credentials sent to their email.'
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
