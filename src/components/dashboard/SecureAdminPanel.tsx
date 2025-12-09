@@ -99,12 +99,11 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
     student_id: ""
   });
 
-  // Add user dialog
+  // Add user dialog - password is auto-generated and emailed to user
   const [addUserDialogOpen, setAddUserDialogOpen] = useState(false);
   const [addUserLoading, setAddUserLoading] = useState(false);
   const [addUserForm, setAddUserForm] = useState({
     email: "",
-    password: "",
     full_name: "",
     role: "student",
     department: "",
@@ -310,24 +309,24 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
   };
 
   const handleAddUser = async () => {
-    if (!addUserForm.email || !addUserForm.password || !addUserForm.full_name || !addUserForm.department) {
-      toast.error("Please fill in all required fields");
+    // Validate required admin-controlled fields
+    if (!addUserForm.email || !addUserForm.full_name || !addUserForm.department) {
+      toast.error("Please fill in all required fields: Email, Full Name, and Department");
       return;
     }
 
-    if (addUserForm.password.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(addUserForm.email)) {
+      toast.error("Please enter a valid email address");
       return;
     }
 
     setAddUserLoading(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      
       const response = await supabase.functions.invoke('create-user', {
         body: {
           email: addUserForm.email,
-          password: addUserForm.password,
           full_name: addUserForm.full_name,
           role: addUserForm.role,
           department: addUserForm.department,
@@ -348,11 +347,10 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
         throw new Error(response.data.error);
       }
 
-      toast.success(`User ${addUserForm.full_name} created successfully`);
+      toast.success(`User ${addUserForm.full_name} created successfully. Login credentials have been sent to their email.`);
       setAddUserDialogOpen(false);
       setAddUserForm({
         email: "",
-        password: "",
         full_name: "",
         role: "student",
         department: "",
@@ -1052,11 +1050,19 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
           <DialogHeader>
             <DialogTitle>Add New User</DialogTitle>
             <DialogDescription>
-              Create a new user account in your institution
+              Create a new user account. A secure password will be auto-generated and sent to the user's email.
             </DialogDescription>
           </DialogHeader>
           <ScrollArea className="max-h-[60vh]">
             <div className="space-y-4 pr-4">
+              {/* Info banner about password */}
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+                <p className="text-sm text-primary">
+                  <Shield className="h-4 w-4 inline mr-2" />
+                  Password will be auto-generated and emailed to the user. They can change it after logging in.
+                </p>
+              </div>
+              
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2 space-y-2">
                   <Label>Full Name *</Label>
@@ -1068,22 +1074,13 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div className="col-span-2 space-y-2">
                   <Label>Email *</Label>
                   <Input
                     type="email"
                     value={addUserForm.email}
                     onChange={(e) => setAddUserForm(prev => ({ ...prev, email: e.target.value }))}
                     placeholder="user@email.com"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Password *</Label>
-                  <Input
-                    type="password"
-                    value={addUserForm.password}
-                    onChange={(e) => setAddUserForm(prev => ({ ...prev, password: e.target.value }))}
-                    placeholder="Min 6 characters"
                   />
                 </div>
               </div>
