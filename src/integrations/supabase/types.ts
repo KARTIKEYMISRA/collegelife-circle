@@ -1357,6 +1357,10 @@ export type Database = {
         }
         Returns: string
       }
+      decrement_connections_count: {
+        Args: { user_id_param: string }
+        Returns: undefined
+      }
       get_discovery_profiles: {
         Args: { search_term?: string }
         Returns: {

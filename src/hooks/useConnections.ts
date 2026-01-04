@@ -216,8 +216,8 @@ export const useConnections = () => {
         .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${targetUserId}),and(sender_id.eq.${targetUserId},receiver_id.eq.${currentUser.id})`);
 
       // Decrement connection counts for both users
-      await supabase.rpc('decrement_connections_count', { user_id_param: currentUser.id });
-      await supabase.rpc('decrement_connections_count', { user_id_param: targetUserId });
+      await supabase.rpc('decrement_connections_count' as any, { user_id_param: currentUser.id });
+      await supabase.rpc('decrement_connections_count' as any, { user_id_param: targetUserId });
 
       toast({
         title: "Connection removed",
