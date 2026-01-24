@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -15,6 +15,7 @@ interface Profile {
   institution_id?: string;
   connections_count: number;
   daily_streak: number;
+  matchReason?: string;
 }
 
 interface ConnectionRequest {
@@ -29,11 +30,19 @@ interface ConnectionRequest {
   sender_profile_picture?: string;
 }
 
+interface Connection {
+  id: string;
+  user1_id: string;
+  user2_id: string;
+  created_at: string;
+}
+
 export const useConnections = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [mentors, setMentors] = useState<Profile[]>([]);
   const [authorities, setAuthorities] = useState<Profile[]>([]);
   const [connectionRequests, setConnectionRequests] = useState<ConnectionRequest[]>([]);
+  const [connections, setConnections] = useState<Connection[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [currentProfile, setCurrentProfile] = useState<Profile | null>(null);
@@ -318,12 +327,26 @@ export const useConnections = () => {
     return { status: 'none' };
   }, [connectionRequests, currentUser]);
 
+  const fetchConnections = useCallback(async () => {
+    if (!currentUser) return;
+    
+    const { data: connectionsData } = await supabase
+      .from('connections')
+      .select('*')
+      .or(`user1_id.eq.${currentUser.id},user2_id.eq.${currentUser.id}`);
+    
+    if (connectionsData) {
+      setConnections(connectionsData);
+    }
+  }, [currentUser]);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       await Promise.all([
         fetchProfiles(),
-        fetchConnectionRequests()
+        fetchConnectionRequests(),
+        fetchConnections()
       ]);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -334,7 +357,69 @@ export const useConnections = () => {
       });
     }
     setLoading(false);
-  }, [fetchProfiles, fetchConnectionRequests]);
+  }, [fetchProfiles, fetchConnectionRequests, fetchConnections]);
+
+  // Real-time subscriptions
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const connectionRequestsChannel = supabase
+      .channel('connection-requests-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'connection_requests',
+          filter: `receiver_id=eq.${currentUser.id}`,
+        },
+        (payload) => {
+          console.log('Connection request change:', payload);
+          fetchConnectionRequests();
+          
+          if (payload.eventType === 'INSERT') {
+            toast({
+              title: "New Connection Request",
+              description: "Someone wants to connect with you!",
+            });
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'connection_requests',
+          filter: `sender_id=eq.${currentUser.id}`,
+        },
+        () => {
+          fetchConnectionRequests();
+        }
+      )
+      .subscribe();
+
+    const connectionsChannel = supabase
+      .channel('connections-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'connections',
+        },
+        () => {
+          fetchConnections();
+          fetchProfiles();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(connectionRequestsChannel);
+      supabase.removeChannel(connectionsChannel);
+    };
+  }, [currentUser, fetchConnectionRequests, fetchConnections, fetchProfiles]);
 
   useEffect(() => {
     fetchCurrentUser();
@@ -350,12 +435,108 @@ export const useConnections = () => {
     req.receiver_id === currentUser?.id && req.status === 'pending'
   );
 
+  const sentRequests = connectionRequests.filter(req =>
+    req.sender_id === currentUser?.id && req.status === 'pending'
+  );
+
+  // Get my connections as profiles
+  const myConnections = useMemo(() => {
+    if (!currentUser) return [];
+    
+    const connectedUserIds = connections.map(conn => 
+      conn.user1_id === currentUser.id ? conn.user2_id : conn.user1_id
+    );
+    
+    const allProfiles = [...profiles, ...mentors, ...authorities];
+    return allProfiles.filter(p => connectedUserIds.includes(p.user_id));
+  }, [connections, currentUser, profiles, mentors, authorities]);
+
+  // Suggested connections based on department and year
+  const suggestedConnections = useMemo(() => {
+    if (!currentProfile || !currentUser) return [];
+    
+    const connectedIds = connections.map(c => 
+      c.user1_id === currentUser.id ? c.user2_id : c.user1_id
+    );
+    const pendingIds = connectionRequests
+      .filter(r => r.status === 'pending')
+      .map(r => r.sender_id === currentUser.id ? r.receiver_id : r.sender_id);
+    
+    const excludeIds = new Set([...connectedIds, ...pendingIds, currentUser.id]);
+    
+    const notConnected = profiles.filter(p => !excludeIds.has(p.user_id));
+    
+    // Score and sort by relevance
+    const scored = notConnected.map(profile => {
+      let score = 0;
+      let reasons: string[] = [];
+      
+      // Same department
+      if (profile.department === currentProfile.department) {
+        score += 30;
+        reasons.push('Same department');
+      }
+      
+      // Same year
+      if (profile.year_of_study === currentProfile.year_of_study) {
+        score += 20;
+        reasons.push('Same year');
+      }
+      
+      // Close year (within 1)
+      if (profile.year_of_study && currentProfile.year_of_study && 
+          Math.abs(profile.year_of_study - currentProfile.year_of_study) === 1) {
+        score += 10;
+      }
+      
+      // High connection count (popular)
+      if (profile.connections_count > 10) {
+        score += 5;
+        reasons.push('Popular');
+      }
+      
+      // Active streak
+      if (profile.daily_streak > 5) {
+        score += 5;
+        reasons.push('Active');
+      }
+      
+      return {
+        ...profile,
+        score,
+        matchReason: reasons[0] || 'Suggested'
+      };
+    });
+    
+    return scored
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 8);
+  }, [profiles, currentProfile, currentUser, connections, connectionRequests]);
+
+  // Stats
+  const stats = useMemo(() => ({
+    totalConnections: myConnections.length,
+    pendingRequests: pendingRequests.length,
+    sentRequests: sentRequests.length,
+    weeklyGrowth: connections.filter(c => {
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return new Date(c.created_at) > weekAgo;
+    }).length,
+    connectionStreak: currentProfile?.daily_streak || 0
+  }), [myConnections, pendingRequests, sentRequests, connections, currentProfile]);
+
   return {
     profiles,
     mentors,
     authorities,
     connectionRequests,
     pendingRequests,
+    sentRequests,
+    connections,
+    myConnections,
+    suggestedConnections,
+    stats,
     loading,
     currentUser,
     currentProfile,
