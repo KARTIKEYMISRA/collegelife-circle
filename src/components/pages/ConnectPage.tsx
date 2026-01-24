@@ -7,27 +7,37 @@ import {
   UserPlus,
   Clock,
   CheckCircle,
-  RefreshCw
+  RefreshCw,
+  Users,
+  Sparkles
 } from "lucide-react";
 import { ProfileViewPage } from "./ProfileViewPage";
 import { ProfileCard } from "@/components/connections/ProfileCard";
 import { MentorCard } from "@/components/connections/MentorCard";
 import { AuthorityCard } from "@/components/connections/AuthorityCard";
 import { PendingRequestsCard } from "@/components/connections/PendingRequestsCard";
+import { ConnectionStatsCard } from "@/components/connections/ConnectionStatsCard";
+import { SuggestedConnectionsCard } from "@/components/connections/SuggestedConnectionsCard";
+import { MyConnectionsGrid } from "@/components/connections/MyConnectionsGrid";
 import { useConnections } from "@/hooks/useConnections";
 import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 export const ConnectPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("students");
+  const [activeTab, setActiveTab] = useState("my-connections");
   const [connectionFilter, setConnectionFilter] = useState<"all" | "connected" | "requested" | "not_connected">("all");
   const [selectedProfile, setSelectedProfile] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const {
     profiles,
     mentors,
     authorities,
     pendingRequests,
+    myConnections,
+    suggestedConnections,
+    stats,
     loading,
     sendConnectionRequest,
     cancelConnectionRequest,
@@ -80,7 +90,7 @@ export const ConnectPage = () => {
       title: "Opening chat...",
       description: "Redirecting to messages.",
     });
-    // Navigate to chat - can be implemented based on app routing
+    navigate('/chat');
   };
 
   if (loading) {
@@ -100,14 +110,23 @@ export const ConnectPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+        <div className="text-center mb-6">
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
             Connect with Your Community
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Find peers, mentors, and collaborators to enhance your college experience
           </p>
         </div>
+
+        {/* Stats Card */}
+        <ConnectionStatsCard
+          totalConnections={stats.totalConnections}
+          pendingRequests={stats.pendingRequests}
+          sentRequests={stats.sentRequests}
+          weeklyGrowth={stats.weeklyGrowth}
+          connectionStreak={stats.connectionStreak}
+        />
 
         {/* Pending Connection Requests */}
         <PendingRequestsCard
@@ -117,8 +136,16 @@ export const ConnectPage = () => {
           onViewProfile={setSelectedProfile}
         />
 
+        {/* Suggested Connections */}
+        <SuggestedConnectionsCard
+          suggestions={suggestedConnections}
+          onConnect={sendConnectionRequest}
+          onViewProfile={setSelectedProfile}
+          onViewAll={() => setActiveTab("students")}
+        />
+
         {/* Search and Filters */}
-        <div className="max-w-4xl mx-auto mb-8 space-y-4">
+        <div className="max-w-4xl mx-auto mb-6 space-y-4">
           <div className="relative flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -134,45 +161,51 @@ export const ConnectPage = () => {
             </Button>
           </div>
           
-          {/* Connection Status Filters */}
-          <div className="flex gap-2 justify-center flex-wrap">
-            <Button
-              variant={connectionFilter === "all" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setConnectionFilter("all")}
-            >
-              All
-            </Button>
-            <Button
-              variant={connectionFilter === "connected" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setConnectionFilter("connected")}
-            >
-              <CheckCircle className="h-4 w-4 mr-1" />
-              Connected
-            </Button>
-            <Button
-              variant={connectionFilter === "requested" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setConnectionFilter("requested")}
-            >
-              <Clock className="h-4 w-4 mr-1" />
-              Requested
-            </Button>
-            <Button
-              variant={connectionFilter === "not_connected" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setConnectionFilter("not_connected")}
-            >
-              <UserPlus className="h-4 w-4 mr-1" />
-              Not Connected
-            </Button>
-          </div>
+          {/* Connection Status Filters - only show in discovery tabs */}
+          {activeTab !== "my-connections" && (
+            <div className="flex gap-2 justify-center flex-wrap">
+              <Button
+                variant={connectionFilter === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setConnectionFilter("all")}
+              >
+                All
+              </Button>
+              <Button
+                variant={connectionFilter === "connected" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setConnectionFilter("connected")}
+              >
+                <CheckCircle className="h-4 w-4 mr-1" />
+                Connected
+              </Button>
+              <Button
+                variant={connectionFilter === "requested" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setConnectionFilter("requested")}
+              >
+                <Clock className="h-4 w-4 mr-1" />
+                Requested
+              </Button>
+              <Button
+                variant={connectionFilter === "not_connected" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setConnectionFilter("not_connected")}
+              >
+                <UserPlus className="h-4 w-4 mr-1" />
+                Not Connected
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 max-w-md mx-auto mb-8">
+          <TabsList className="grid w-full grid-cols-4 max-w-lg mx-auto mb-8">
+            <TabsTrigger value="my-connections" className="flex items-center gap-1">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">My</span> ({myConnections.length})
+            </TabsTrigger>
             <TabsTrigger value="students">
               Students ({filteredProfiles.length})
             </TabsTrigger>
@@ -183,6 +216,15 @@ export const ConnectPage = () => {
               Authority ({filteredAuthorities.length})
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="my-connections">
+            <MyConnectionsGrid
+              connections={myConnections}
+              onRemoveConnection={removeConnection}
+              onViewProfile={setSelectedProfile}
+              onStartChat={handleStartChat}
+            />
+          </TabsContent>
 
           <TabsContent value="students">
             {filteredProfiles.length === 0 ? (

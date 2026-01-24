@@ -9,12 +9,14 @@ interface ConnectionDialogProps {
   targetUserName: string;
   onSendRequest: (message?: string) => void;
   triggerVariant?: "default" | "outline";
+  compact?: boolean;
 }
 
 export const ConnectionDialog = ({
   targetUserName,
   onSendRequest,
   triggerVariant = "default",
+  compact = false,
 }: ConnectionDialogProps) => {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
@@ -31,9 +33,9 @@ export const ConnectionDialog = ({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant={triggerVariant} className="flex-1">
-          <UserPlus className="h-4 w-4 mr-2" />
-          Connect
+        <Button size="sm" variant={triggerVariant} className={compact ? "w-full" : "flex-1"}>
+          <UserPlus className={compact ? "h-4 w-4" : "h-4 w-4 mr-2"} />
+          {!compact && "Connect"}
         </Button>
       </DialogTrigger>
       <DialogContent>
