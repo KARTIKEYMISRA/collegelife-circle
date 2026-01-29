@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
 import { 
   FileText, 
   Users, 
@@ -20,6 +20,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { CalendarTaskManager } from "./CalendarTaskManager";
 import { SecureAdminPanel } from "./SecureAdminPanel";
+import { ScheduleManager } from "@/components/erp/ScheduleManager";
+import { AttendanceManager } from "@/components/erp/AttendanceManager";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -498,6 +500,12 @@ export const AuthorityDashboard = ({ user, profile }: AuthorityDashboardProps) =
           </Card>
         </div>
       </div>
+
+      {/* ERP - Schedule Management */}
+      <ScheduleManager user={user} institutionId={profile.institution_id} />
+
+      {/* ERP - Attendance Management */}
+      <AttendanceManager user={user} institutionId={profile.institution_id} />
 
       {/* Task Calendar */}
       <CalendarTaskManager userId={user.id} />
