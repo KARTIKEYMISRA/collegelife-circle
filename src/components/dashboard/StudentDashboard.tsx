@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -17,6 +17,8 @@ import {
   Crown
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { ScheduleViewer } from "@/components/erp/ScheduleViewer";
+import { AttendanceChart } from "@/components/erp/AttendanceChart";
 import { CertificateManager } from "./CertificateManager";
 
 interface Profile {
@@ -283,6 +285,22 @@ export const StudentDashboard = ({ user, profile }: StudentDashboardProps) => {
             <div className="text-sm text-muted-foreground">Certificates</div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Attendance Charts - ERP Section */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold flex items-center gap-2">
+          📊 My Attendance
+        </h2>
+        <AttendanceChart userId={user.id} />
+      </div>
+
+      {/* Schedule Section */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold flex items-center gap-2">
+          📅 My Schedule
+        </h2>
+        <ScheduleViewer profile={profile as any} />
       </div>
 
       {/* Main Dashboard Content */}

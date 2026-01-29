@@ -136,6 +136,50 @@ export type Database = {
           },
         ]
       }
+      attendance: {
+        Row: {
+          attendance_date: string
+          created_at: string
+          id: string
+          marked_by: string
+          remarks: string | null
+          schedule_id: string
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          attendance_date: string
+          created_at?: string
+          id?: string
+          marked_by: string
+          remarks?: string | null
+          schedule_id: string
+          status?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          attendance_date?: string
+          created_at?: string
+          id?: string
+          marked_by?: string
+          remarks?: string | null
+          schedule_id?: string
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       authority_audit_log: {
         Row: {
           action_type: string
@@ -1096,6 +1140,71 @@ export type Database = {
           },
         ]
       }
+      schedules: {
+        Row: {
+          created_at: string
+          created_by: string
+          day_of_week: number
+          end_time: string
+          id: string
+          institution_id: string | null
+          room_location: string | null
+          start_time: string
+          subject: string
+          target_branch: string | null
+          target_department: string | null
+          target_section: string | null
+          target_year: number | null
+          teacher_name: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          institution_id?: string | null
+          room_location?: string | null
+          start_time: string
+          subject: string
+          target_branch?: string | null
+          target_department?: string | null
+          target_section?: string | null
+          target_year?: number | null
+          teacher_name?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          institution_id?: string | null
+          room_location?: string | null
+          start_time?: string
+          subject?: string
+          target_branch?: string | null
+          target_department?: string | null
+          target_section?: string | null
+          target_year?: number | null
+          teacher_name?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedules_institution_id_fkey"
+            columns: ["institution_id"]
+            isOneToOne: false
+            referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       security_audit_log: {
         Row: {
           action: string
@@ -1360,6 +1469,16 @@ export type Database = {
       decrement_connections_count: {
         Args: { user_id_param: string }
         Returns: undefined
+      }
+      get_attendance_stats: {
+        Args: { p_days?: number; p_student_id: string }
+        Returns: {
+          absent_count: number
+          attendance_percentage: number
+          late_count: number
+          present_count: number
+          total_classes: number
+        }[]
       }
       get_discovery_profiles: {
         Args: { search_term?: string }
