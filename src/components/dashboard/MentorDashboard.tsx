@@ -9,9 +9,7 @@ import {
   MessageCircle, 
   CheckCircle2, 
   Clock,
-  TrendingUp,
   Star,
-  Zap,
   BookOpen,
   Award,
   UserCheck,
@@ -21,6 +19,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { GoalManager } from "@/components/goals/GoalManager";
 import { AchievementManager } from "@/components/achievements/AchievementManager";
+import { TeacherScheduleWidget } from "@/components/erp/TeacherScheduleWidget";
 
 interface Profile {
   id: string;
@@ -446,6 +445,9 @@ export const MentorDashboard = ({ user, profile }: MentorDashboardProps) => {
           </Card>
         </div>
       </div>
+
+      {/* Teaching Schedule (if mentor teaches classes) */}
+      <TeacherScheduleWidget user={user} profile={profile} />
 
       {/* Integrated Components */}
       <Tabs defaultValue="goals" className="w-full">
