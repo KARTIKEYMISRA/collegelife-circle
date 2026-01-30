@@ -18,15 +18,18 @@ import {
   Trash2, 
   Plus,
   Search,
-  Filter,
   History,
   Eye,
   EyeOff,
-  Shield
+  Shield,
+  Calendar
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
+import { ScheduleManager } from "@/components/erp/ScheduleManager";
+import { BulkScheduleImport } from "@/components/erp/BulkScheduleImport";
+import { ScheduleCopyTool } from "@/components/erp/ScheduleCopyTool";
 
 interface SecureAdminPanelProps {
   user: any;
@@ -120,6 +123,13 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
   const [uniqueCourses, setUniqueCourses] = useState<string[]>([]);
   const [uniqueSections, setUniqueSections] = useState<string[]>([]);
   const [uniqueBranches, setUniqueBranches] = useState<string[]>([]);
+  
+  // Schedule management
+  const [scheduleRefreshKey, setScheduleRefreshKey] = useState(0);
+  
+  const handleScheduleImportComplete = () => {
+    setScheduleRefreshKey(prev => prev + 1);
+  };
 
   const handleUnlock = async () => {
     if (!password.trim()) {
@@ -548,14 +558,17 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
       </Card>
     );
   }
-
   return (
     <div className="space-y-4">
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="users" className="text-sm">
             <Users className="h-4 w-4 mr-2" />
             User Management
+          </TabsTrigger>
+          <TabsTrigger value="schedules" className="text-sm">
+            <Calendar className="h-4 w-4 mr-2" />
+            Schedules
           </TabsTrigger>
           <TabsTrigger value="audit" className="text-sm">
             <History className="h-4 w-4 mr-2" />
@@ -757,6 +770,30 @@ export const SecureAdminPanel = ({ user, profile }: SecureAdminPanelProps) => {
               </Table>
             </ScrollArea>
           </Card>
+        </TabsContent>
+
+        {/* Schedules Tab */}
+        <TabsContent value="schedules" className="space-y-6">
+          {/* Schedule Manager */}
+          <ScheduleManager 
+            key={scheduleRefreshKey} 
+            user={user} 
+            institutionId={profile.institution_id} 
+          />
+          
+          {/* Bulk Import */}
+          <BulkScheduleImport 
+            user={user} 
+            institutionId={profile.institution_id}
+            onImportComplete={handleScheduleImportComplete}
+          />
+          
+          {/* Copy Schedules to Section */}
+          <ScheduleCopyTool 
+            user={user} 
+            institutionId={profile.institution_id}
+            onCopyComplete={handleScheduleImportComplete}
+          />
         </TabsContent>
 
         <TabsContent value="audit" className="space-y-4">

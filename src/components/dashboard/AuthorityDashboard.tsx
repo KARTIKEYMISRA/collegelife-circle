@@ -20,8 +20,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { CalendarTaskManager } from "./CalendarTaskManager";
 import { SecureAdminPanel } from "./SecureAdminPanel";
-import { ScheduleManager } from "@/components/erp/ScheduleManager";
 import { AttendanceManager } from "@/components/erp/AttendanceManager";
+import { TeacherScheduleWidget } from "@/components/erp/TeacherScheduleWidget";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -501,8 +501,8 @@ export const AuthorityDashboard = ({ user, profile }: AuthorityDashboardProps) =
         </div>
       </div>
 
-      {/* ERP - Schedule Management */}
-      <ScheduleManager user={user} institutionId={profile.institution_id} />
+      {/* My Teaching Schedule (for teachers/authority who teach) */}
+      <TeacherScheduleWidget user={user} profile={profile} />
 
       {/* ERP - Attendance Management */}
       <AttendanceManager user={user} institutionId={profile.institution_id} />
