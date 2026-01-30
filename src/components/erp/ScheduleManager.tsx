@@ -392,14 +392,14 @@ export const ScheduleManager = ({ user, institutionId }: ScheduleManagerProps) =
               <div>
                 <Label>Target Year</Label>
                 <Select 
-                  value={form.target_year}
-                  onValueChange={(v) => setForm({ ...form, target_year: v })}
+                  value={form.target_year || "all"}
+                  onValueChange={(v) => setForm({ ...form, target_year: v === "all" ? "" : v })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="All Years" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Years</SelectItem>
+                    <SelectItem value="all">All Years</SelectItem>
                     <SelectItem value="1">Year 1</SelectItem>
                     <SelectItem value="2">Year 2</SelectItem>
                     <SelectItem value="3">Year 3</SelectItem>
