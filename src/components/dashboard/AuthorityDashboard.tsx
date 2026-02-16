@@ -135,44 +135,41 @@ export const AuthorityDashboard = ({ user, profile }: AuthorityDashboardProps) =
       // Fetch approval requests assigned to this authority
       const { data: requestsData } = await supabase
         .from('approval_requests')
-        .select(`
-          *,
-          requester:profiles!approval_requests_requested_by_fkey(*)
-        `)
+        .select('*')
         .eq('assigned_to', profile.id)
         .eq('status', 'pending')
         .limit(10);
 
-      // Fetch institution statistics
-      const { data: studentsCount } = await supabase
+      // Fetch institution statistics using count
+      const { count: studentsTotal } = await supabase
         .from('profiles')
         .select('id', { count: 'exact', head: true })
         .eq('institution_id', profile.institution_id)
         .eq('role', 'student');
 
-      const { data: mentorsCount } = await supabase
+      const { count: mentorsTotal } = await supabase
         .from('profiles')
         .select('id', { count: 'exact', head: true })
         .eq('institution_id', profile.institution_id)
         .eq('role', 'mentor');
 
-      const { data: teachersCount } = await supabase
+      const { count: teachersTotal } = await supabase
         .from('profiles')
         .select('id', { count: 'exact', head: true })
         .eq('institution_id', profile.institution_id)
         .eq('role', 'teacher');
 
-      const { data: eventsCount } = await supabase
+      const { count: eventsTotal } = await supabase
         .from('campus_events')
         .select('id', { count: 'exact', head: true })
         .eq('is_active', true);
 
       setApprovalRequests(requestsData || []);
       setInstitutionStats({
-        totalStudents: studentsCount?.length || 0,
-        totalMentors: mentorsCount?.length || 0,
-        totalTeachers: teachersCount?.length || 0,
-        activeEvents: eventsCount?.length || 0
+        totalStudents: studentsTotal || 0,
+        totalMentors: mentorsTotal || 0,
+        totalTeachers: teachersTotal || 0,
+        activeEvents: eventsTotal || 0
       });
       
     } catch (error) {
@@ -392,9 +389,9 @@ export const AuthorityDashboard = ({ user, profile }: AuthorityDashboardProps) =
                           <h3 className="font-semibold">{request.title}</h3>
                           <p className="text-sm text-muted-foreground mb-2">{request.description}</p>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>From: {request.requester?.full_name}</span>
-                            <span>•</span>
                             <span>Type: {request.request_type}</span>
+                            <span>•</span>
+                            <span>Priority: {request.priority}</span>
                           </div>
                         </div>
                         <Badge variant={getPriorityColor(request.priority)}>
